@@ -1,0 +1,69 @@
+{
+  "site": {
+    "title": "My Webpage",
+    "description": "Welcome to my professional webpage",
+    "author": "GONE45140",
+    "year": 2026
+  },
+  "navigation": [
+    {
+      "id": 1,
+      "name": "Home",
+      "link": "#home"
+    },
+    {
+      "id": 2,
+      "name": "About",
+      "link": "#about"
+    },
+    {
+      "id": 3,
+      "name": "Services",
+      "link": "#services"
+    },
+    {
+      "id": 4,
+      "name": "Contact",
+      "link": "#contact"
+    }
+  ],
+  "services": [
+    {
+      "id": 1,
+      "title": "Service 1",
+      "description": "Description of your first service goes here.",
+      "icon": "service-1"
+    },
+    {
+      "id": 2,
+      "title": "Service 2",
+      "description": "Description of your second service goes here.",
+      "icon": "service-2"
+    },
+    {
+      "id": 3,
+      "title": "Service 3",
+      "description": "Description of your third service goes here.",
+      "icon": "service-3"
+    }
+  ],
+  "contact": {
+    "email": "contact@mywebpage.com",
+    "phone": "+33 1 23 45 67 89",
+    "address": "123 Street, City, Country"
+  },
+  "social": [
+    {
+      "platform": "Facebook",
+      "url": "https://facebook.com"
+    },
+    {
+      "platform": "Twitter",
+      "url": "https://twitter.com"
+    },
+    {
+      "platform": "LinkedIn",
+      "url": "https://linkedin.com"
+    }
+  ]
+}
