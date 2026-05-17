@@ -962,6 +962,33 @@ function renderArchive(){
       +bets+'</div>';
   }).join('');
 }
+  function deleteArchived(id){
+  if(!confirm('Supprimer ce pari ?'))return;
+  var idx=state.a.findIndex(function(x){return x.id===id;});if(idx===-1)return;
+  var bet=state.a[idx];
+  if(bet.win)state.b[bet.b]=(parseFloat(state.b[bet.b]||0)-(bet.m*bet.cote)).toFixed(2);
+  else state.b[bet.b]=(parseFloat(state.b[bet.b]||0)+parseFloat(bet.m)).toFixed(2);
+  state.a.splice(idx,1);save();
+}
+function editArchived(id){
+  var idx=state.a.findIndex(function(x){return x.id===id;});if(idx===-1)return;
+  var bet=state.a[idx];
+  if(!confirm('Inverser le résultat ? (actuellement '+(bet.win?'WIN':'LOSS')+')'))return;
+  if(bet.win){
+    state.b[bet.b]=(parseFloat(state.b[bet.b]||0)-(bet.m*bet.cote)+parseFloat(bet.m)).toFixed(2);
+  }else{
+    state.b[bet.b]=(parseFloat(state.b[bet.b]||0)-parseFloat(bet.m)+(bet.m*bet.cote)).toFixed(2);
+  }
+  bet.win=!bet.win;save();
+}
+function cancelBet(id){
+  if(!confirm('Annuler ce pari et rembourser la mise ?'))return;
+  var idx=state.h.findIndex(function(x){return x.id===id;});if(idx===-1)return;
+  var bet=state.h[idx];
+  state.b[bet.b]=(parseFloat(state.b[bet.b]||0)+parseFloat(bet.m)).toFixed(2);
+  if(bet.isS&&bet.l){var u=state.u.find(function(x){return x.n===bet.n;});if(u)u.l=parseInt(bet.l)||1;}
+  state.h.splice(idx,1);save();
+}
 
 /* ── GLOBAL CHART ── */
 function renderGlobalChart(){
@@ -1124,8 +1151,12 @@ function openClub(nom,idx){
           return '<div class="brow '+(h.win?'w':'l')+'">'
             +'<div class="brow-main"><div class="brow-title">'+(h.sport||'')+' '+h.target+'</div>'
             +'<div class="brow-meta">'+h.t+' '+dd+hh+'· '+(h.type||'—')+' · @'+h.cote+' · <span style="color:'+b2.c+';">'+b2.n+'</span>'+(h.debrief?'<br><i>'+h.debrief+'</i>':'')+'</div></div>'
-            +'<div class="brow-right"><div class="brow-amt" style="color:'+(h.win?'var(--g)':'var(--r)')+';">'+(h.win?'+'+(h.m*h.cote).toFixed(2):'-'+h.m)+'€</div>'
-            +'<div class="brow-tag" style="color:'+(h.win?'var(--g)':'var(--r)')+';">'+(h.win?'WIN':'LOSS')+'</div></div></div>';
+           +'<div class="brow-right"><div class="brow-amt" style="color:'+(h.win?'var(--g)':'var(--r)')+';">'+(h.win?'+'+(h.m*h.cote).toFixed(2):'-'+h.m)+'€</div>'
+        +'<div class="brow-tag" style="color:'+(h.win?'var(--g)':'var(--r)')+';">'+(h.win?'WIN':'LOSS')+'</div>'
+        +'<div style="display:flex;gap:4px;margin-top:4px">'
+        +'<button data-aid="'+h.id+'" onclick="editArchived(this.dataset.aid)" style="background:none;border:1px solid rgba(77,132,255,.25);color:var(--a);font-size:10px;padding:2px 6px;border-radius:3px;cursor:pointer;font-weight:700">✏</button>'
+        +'<button data-aid="'+h.id+'" onclick="deleteArchived(this.dataset.aid)" style="background:none;border:1px solid rgba(255,69,69,.2);color:var(--r);font-size:10px;padding:2px 6px;border-radius:3px;cursor:pointer;font-weight:700">🗑</button>'
+        +'</div></div></div>';
         }).join('');
     }).join('');
   } else {
