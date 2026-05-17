@@ -544,7 +544,7 @@ input[type="date"],input[type="time"]{color-scheme:dark;}
       <input id="gemini-key-inp" type="password" class="fi" placeholder="Clé API Gemini (AIza…)" style="margin-bottom:6px;font-size:12px" oninput="localStorage.setItem('g45_gem',this.value)">
       <label style="display:flex;align-items:center;justify-content:center;gap:7px;background:rgba(77,132,255,.12);border:1px dashed rgba(77,132,255,.3);border-radius:var(--r6);padding:10px;cursor:pointer;font-size:12px;font-weight:700;color:var(--a)">
         📸 Analyser une photo du ticket
-        <input type="file" accept="image/*" capture="environment" style="display:none" onchange="geminiAnalyze(this)">
+        <input type="file" accept="image/*,image/jpeg,image/png,image/webp" style="display:none" onchange="geminiAnalyze(this)">
       </label>
       <div id="gem-status" style="display:none;margin-top:6px;padding:6px 10px;border-radius:var(--r4);font-size:11px;font-weight:600;text-align:center"></div>
     </div>
@@ -1635,26 +1635,46 @@ function closeCapture(){
 function geminiAnalyze(inp){
   var file=inp.files[0];if(!file)return;
   var key=($i('gemini-key-inp')&&$i('gemini-key-inp').value||'').trim();
-  if(!key){showGemSt('❌ Entre ta clé Gemini','#ff4545');return;}
-  showGemSt('🤖 Analyse en cours…','#4d84ff');
+  if(!key){showGemSt('❌ Entre ta clé Gemini (AIza…)','#ff4545');return;}
+  showGemSt('⏳ Analyse en cours…','#4d84ff');
   var reader=new FileReader();
   reader.onload=function(ev){
     var b64=ev.target.result.split(',')[1];
-    var prompt='Analyse ce ticket de pari sportif. Réponds UNIQUEMENT en JSON (sans markdown ni backticks): {"equipe":"nom","adversaire":"vs qui","competition":"ligue","sport":"football","bookmaker":"winamax","cote":1.85,"mise":10,"date":"YYYY-MM-DD","selections":[{"type":"Victoire","cote":1.85}]}';
+    var mime=file.type||'image/jpeg';
+    var prompt='Tu es un assistant qui analyse des tickets de paris sportifs. Regarde cette image et extrais les informations. Réponds UNIQUEMENT avec un objet JSON valide, sans markdown, sans backticks, sans explication. Format exact: {"equipe":"nom equipe suivie","adversaire":"equipe adverse ou match complet","competition":"nom competition","sport":"football","bookmaker":"nom bookmaker","cote":1.85,"mise":10,"date":"2026-05-17","selections":[{"type":"Victoire","cote":1.85},{"type":"BTS Oui","cote":1.30}]}';
     fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key='+key,{
-      method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({contents:[{parts:[{inline_data:{mime_type:file.type||'image/jpeg',data:b64}},{text:prompt}]}]})
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        contents:[{parts:[
+          {inline_data:{mime_type:mime,data:b64}},
+          {text:prompt}
+        ]}],
+        generationConfig:{temperature:0,maxOutputTokens:512}
+      })
     })
-    .then(function(r){return r.json();})
+    .then(function(r){
+      if(!r.ok)throw new Error('HTTP '+r.status);
+      return r.json();
+    })
     .then(function(d){
-      var text=((((d.candidates||[])[0]||{}).content||{}).parts||[{text:'{}'}])[0].text||'{}';
+      if(d.error){showGemSt('❌ API : '+d.error.message,'#ff4545');return;}
+      var raw=((((d.candidates||[])[0]||{}).content||{}).parts||[])[0];
+      var text=(raw&&raw.text)||'';
+      /* Robuste : extraire le JSON même si Gemini ajoute du texte */
+      var jsonStr=text;
+      var m1=text.match(/\{[\s\S]*\}/);
+      if(m1)jsonStr=m1[0];
+      jsonStr=jsonStr.replace(/```json/g,'').replace(/```/g,'').trim();
       try{
-        var parsed=JSON.parse(text.replace(/```json|```/g,'').trim());
+        var parsed=JSON.parse(jsonStr);
         applyGemData(parsed);
-        showGemSt('✅ Ticket analysé ! Vérifie et transfère.','#1ed760');
-      }catch(e){showGemSt('⚠ Impossible de lire — entre manuellement','#f0b020');}
+        showGemSt('✅ Analysé ! Vérifie les champs et transfère.','#1ed760');
+      }catch(e){
+        showGemSt('⚠ JSON invalide — saisis manuellement\n('+text.substring(0,80)+')','#f0b020');
+      }
     })
-    .catch(function(e){showGemSt('❌ Erreur réseau : '+e.message,'#ff4545');});
+    .catch(function(e){showGemSt('❌ '+e.message,'#ff4545');});
   };
   reader.readAsDataURL(file);
 }
