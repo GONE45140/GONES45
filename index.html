@@ -349,7 +349,10 @@ input[type="date"],input[type="time"]{color-scheme:dark;}
         <div class="fg"><label class="fl">Date</label><input type="date" id="c-date" class="fi"></div>
         <div class="fg"><label class="fl">Heure</label><input type="time" id="c-heure" class="fi"></div>
       </div>
-      <button class="btn btn-p" style="margin-top:11px;" onclick="pari(true)">Engager la montante</button>
+      <div style="display:flex;gap:7px;margin-top:11px">
+        <button class="btn btn-p" style="flex:1" onclick="pari(true)">Engager la montante</button>
+        <button onclick="openCapture()" style="width:48px;padding:11px;border:none;border-radius:8px;background:var(--s1);border:1px solid var(--b2);font-size:18px;cursor:pointer" title="Photo ticket">📷</button>
+      </div>
     </div>
     <div class="sec">En cours</div>
     <div class="card"><table class="ltbl"><thead><tr><th>Équipe</th><th>Match</th><th>Cote</th><th>Mise</th><th style="text-align:right">Résultat</th></tr></thead><tbody id="live-strat"></tbody></table></div>
@@ -371,7 +374,10 @@ input[type="date"],input[type="time"]{color-scheme:dark;}
         <div class="fg"><label class="fl">Mise (€)</label><input type="number" id="n-mise" class="fi" value="10"></div>
         <div class="fg" style="grid-column:span 2"><label class="fl">Bookmaker</label><select id="n-book" class="fi"></select></div>
       </div>
-      <button class="btn btn-p" style="margin-top:11px;" onclick="pari(false)">Placer le pari simple</button>
+      <div style="display:flex;gap:7px;margin-top:11px">
+        <button class="btn btn-p" style="flex:1" onclick="pari(false)">Placer le pari</button>
+        <button onclick="openCapture()" style="width:48px;padding:11px;border:none;border-radius:8px;background:var(--s1);border:1px solid var(--b2);font-size:18px;cursor:pointer" title="Photo ticket">📷</button>
+      </div>
     </div>
     <div class="sec">En cours</div>
     <div class="card"><table class="ltbl"><thead><tr><th>Cible</th><th>Mise</th><th style="text-align:right">Résultat</th></tr></thead><tbody id="live-norm"></tbody></table></div>
@@ -521,6 +527,54 @@ input[type="date"],input[type="time"]{color-scheme:dark;}
       <button class="btn" style="background:rgba(77,132,255,.14);color:var(--a);border:1px solid rgba(77,132,255,.25);" onclick="exportData()">Exporter</button>
       <button class="btn" style="background:var(--s1);color:var(--t2);border:1px solid var(--b2);" onclick="importData()">Importer</button>
     </div>
+  </div>
+</div>
+
+
+<!-- CAPTURE MODAL -->
+<div id="capture-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:600;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px">
+  <div style="background:var(--bg2);border:1px solid var(--b1);border-radius:var(--r8);padding:15px;max-width:500px;margin:0 auto">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div style="font-size:14px;font-weight:700">📷 Capture ticket</div>
+      <button onclick="closeCapture()" style="background:none;border:1px solid rgba(255,69,69,.3);color:var(--r);border-radius:4px;padding:3px 10px;cursor:pointer;font-size:11px;font-weight:700">✕ Fermer</button>
+    </div>
+    <!-- GEMINI -->
+    <div style="background:var(--bg3);border-radius:var(--r6);padding:11px 13px;margin-bottom:12px">
+      <div style="font-size:11px;font-weight:700;color:var(--t2);margin-bottom:7px">🤖 Analyse Gemini (gratuit — <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:var(--a);text-decoration:none">clé ici ↗</a>)</div>
+      <input id="gemini-key-inp" type="password" class="fi" placeholder="Clé Gemini API…" style="margin-bottom:7px" oninput="localStorage.setItem('g45_gem',this.value)">
+      <label style="display:flex;align-items:center;justify-content:center;gap:7px;background:rgba(77,132,255,.1);border:1px dashed rgba(77,132,255,.3);border-radius:var(--r6);padding:11px;cursor:pointer;font-size:12px;font-weight:600;color:var(--a)">
+        📸 Choisir une photo du ticket
+        <input type="file" accept="image/*" style="display:none" onchange="geminiAnalyze(this)">
+      </label>
+      <div id="gem-status" style="display:none;margin-top:7px;padding:7px 10px;border-radius:var(--r4);font-size:11px;font-weight:600"></div>
+    </div>
+    <!-- MODE -->
+    <div style="display:flex;gap:6px;margin-bottom:12px">
+      <label style="flex:1;display:flex;align-items:center;gap:6px;padding:9px;background:var(--s1);border-radius:var(--r6);cursor:pointer;font-size:12px;font-weight:600">
+        <input type="radio" id="qp-mode-strat" name="qp-mode" checked style="accent-color:var(--a)"> 🚀 Cockpit
+      </label>
+      <label style="flex:1;display:flex;align-items:center;gap:6px;padding:9px;background:var(--s1);border-radius:var(--r6);cursor:pointer;font-size:12px;font-weight:600">
+        <input type="radio" name="qp-mode" style="accent-color:var(--a)"> 🎯 Simple
+      </label>
+    </div>
+    <!-- FIELDS -->
+    <div class="g2" style="gap:8px;margin-bottom:10px">
+      <div class="fg"><label class="fl">Équipe</label><select id="qp-unit" class="fi"></select></div>
+      <div class="fg"><label class="fl">Bookmaker</label><select id="qp-book" class="fi"></select></div>
+      <div class="fg"><label class="fl">Mise (€)</label><input type="number" id="qp-mise" class="fi"></div>
+      <div class="fg"><label class="fl">Date</label><input type="date" id="qp-date" class="fi" style="color-scheme:dark"></div>
+      <div class="fg" style="grid-column:span 2"><label class="fl">Match / Adversaire</label><input id="qp-match" class="fi" placeholder="PSG vs Lyon…"></div>
+      <div class="fg" style="grid-column:span 2"><label class="fl">Compétition</label><input id="qp-comp" class="fi" placeholder="Ligue 1…"></div>
+    </div>
+    <!-- SELECTIONS -->
+    <label class="fl">Sélections MyMatch</label>
+    <div id="qp-sel-list" style="margin:5px 0 8px"></div>
+    <div style="display:flex;gap:6px;margin-bottom:12px">
+      <input id="qp-sel-type" class="fi" placeholder="Victoire…" style="flex:1">
+      <input type="number" id="qp-sel-cote" class="fi" placeholder="Cote" step="0.01" style="width:72px;color:var(--a);font-weight:700">
+      <button onclick="addQpSel()" style="padding:7px 11px;background:rgba(77,132,255,.14);color:var(--a);border:1px solid rgba(77,132,255,.3);border-radius:var(--r4);font-size:11px;font-weight:700;cursor:pointer">+</button>
+    </div>
+    <button onclick="applyCapture()" class="btn btn-p">✅ Transférer dans le formulaire</button>
   </div>
 </div>
 
@@ -830,7 +884,11 @@ function render(){
       +'<td><div>'+h.target+'</div>'+(h.date||h.heure?'<div style="font-size:9px;color:var(--t2);">'+(h.date?'📅 '+h.date:'')+' '+(h.heure?'⏰ '+h.heure:'')+'</div>':'')+'</td>'
       +'<td style="color:var(--a);font-weight:700;">@'+h.cote+'</td>'
       +'<td style="color:var(--gold);font-weight:700;">'+h.m+'€</td>'
-      +'<td style="text-align:right;white-space:nowrap;"><button class="sbtn sw" onclick="result(\''+h.id+'\',true)" style="margin-right:4px;">Win</button><button class="sbtn sl" onclick="result(\''+h.id+'\',false)">Lose</button></td>'
+      +'<td style="text-align:right;white-space:nowrap">'
+      +'<button class="sbtn sw" onclick="result(\''+h.id+'\',true)" style="margin-right:3px">✅</button>'
+      +'<button class="sbtn sl" onclick="result(\''+h.id+'\',false)" style="margin-right:3px">❌</button>'
+      +'<button onclick="cancelBet(\''+h.id+'\')" style="background:none;border:1px solid rgba(255,69,69,.25);color:var(--r);font-size:11px;font-weight:700;padding:5px 7px;border-radius:4px;cursor:pointer">✕</button>'
+      +'</td>'
       +'</tr>';
   }).join('')||'<tr><td colspan="5" class="empty">Aucun pari en cours</td></tr>';
 
@@ -840,7 +898,11 @@ function render(){
       +'<div style="font-weight:600;">'+h.target+'</div>'
       +'<div style="font-size:10px;color:var(--t2);">'+(h.type||'—')+' · @'+h.cote+' · '+bbadge(h.b)+'</div></td>'
       +'<td style="color:var(--gold);font-weight:700;">'+h.m+'€</td>'
-      +'<td style="text-align:right;white-space:nowrap;"><button class="sbtn sw" onclick="result(\''+h.id+'\',true)" style="margin-right:4px;">Win</button><button class="sbtn sl" onclick="result(\''+h.id+'\',false)">Lose</button></td>'
+      +'<td style="text-align:right;white-space:nowrap">'
+      +'<button class="sbtn sw" onclick="result(\''+h.id+'\',true)" style="margin-right:3px">✅</button>'
+      +'<button class="sbtn sl" onclick="result(\''+h.id+'\',false)" style="margin-right:3px">❌</button>'
+      +'<button onclick="cancelBet(\''+h.id+'\')" style="background:none;border:1px solid rgba(255,69,69,.25);color:var(--r);font-size:11px;font-weight:700;padding:5px 7px;border-radius:4px;cursor:pointer">✕</button>'
+      +'</td>'
       +'</tr>';
   }).join('')||'<tr><td colspan="3" class="empty">Aucun pari en cours</td></tr>';
 
@@ -1192,7 +1254,7 @@ function pari(isS){
     n=u.n;target=$i('c-target').value||'-';type=getMmLabel()||'-';
     sport=$i('c-sport').value||'';comp=$i('c-comp').value||'';
     heure=$i('c-heure').value||'';date=$i('c-date').value||'';
-    b=$i('c-book').value;c=parseFloat($i('c-cote').value)||0;
+    b=$i('c-book').value;c=getMmCote();
     m=parseFloat($i('c-mise').value)||0;l=u.l;
   }else{
     n='SIMPLE';sport=$i('p-sport').value;heure=$i('n-heure').value||'';date=$i('n-date').value||'';
@@ -1216,6 +1278,15 @@ function result(id,win){
   else if(bet.isS){var u2=state.u.find(function(x){return x.n===bet.n;});if(u2&&u2.l<8)u2.l++;}
   var archived=Object.assign({},bet,{win:win,debrief:debrief});
   state.a.unshift(archived);state.h.splice(idx,1);save();updMise();
+}
+function cancelBet(id){
+  if(!confirm('Annuler ce pari et rembourser la mise ?'))return;
+  var idx=state.h.findIndex(function(x){return x.id===id;});if(idx===-1)return;
+  var bet=state.h[idx];
+  /* Rembourse + restore palier */
+  state.b[bet.b]=(parseFloat(state.b[bet.b]||0)+parseFloat(bet.m)).toFixed(2);
+  if(bet.isS&&bet.l){var u=state.u.find(function(x){return x.n===bet.n;});if(u)u.l=parseInt(bet.l)||1;}
+  state.h.splice(idx,1);save();
 }
 function updMise(){
   var u=state.u.find(function(x){return x.n===$i('c-unit').value;});
@@ -1427,6 +1498,11 @@ function addMmType(t){
 function getMmLabel(){
   return mmRows.filter(function(r){return r.type;}).map(function(r){return r.type+' @'+r.cote;}).join(' + ');
 }
+function getMmCote(){
+  var mc=$i('mm-manual-cote');
+  if(mc&&parseFloat(mc.value)>1)return parseFloat(mc.value);
+  return mmRows.reduce(function(a,r){return a*(parseFloat(r.cote)||1);},1);
+}
 
 /* ── SEARCH CLUB API-SPORTS ── */
 var _searchTimer=null;
@@ -1539,6 +1615,124 @@ function fuzzyClubSearch(q){
     return nl.includes(ql)||ql.includes(nl.substring(0,4))||al.startsWith(ql)||nl.startsWith(ql);
   }).slice(0,8);
 }
+
+
+/* ── CAPTURE GEMINI ── */
+var _qpSels=[];
+function openCapture(){
+  var m=$i('capture-modal');if(!m)return;
+  var gk=$i('gemini-key-inp');if(gk)gk.value=localStorage.getItem('g45_gem')||'';
+  var qb=$i('qp-book');if(qb)qb.innerHTML=Object.keys(state.b).map(function(k){return '<option value="'+k+'">'+bki(k).n+'</option>';}).join('');
+  var qu=$i('qp-unit');if(qu)qu.innerHTML=state.u.map(function(u){return '<option value="'+u.n+'">'+(u.sport||'')+' '+u.n+'</option>';}).join('');
+  _qpSels=[];renderQpSels();
+  m.style.display='block';document.body.style.overflow='hidden';
+}
+function closeCapture(){
+  var m=$i('capture-modal');if(m)m.style.display='none';
+  document.body.style.overflow='';
+}
+function geminiAnalyze(inp){
+  var file=inp.files[0];if(!file)return;
+  var key=($i('gemini-key-inp')&&$i('gemini-key-inp').value||'').trim();
+  if(!key){showGemSt('❌ Entre ta clé Gemini','#ff4545');return;}
+  showGemSt('🤖 Analyse en cours…','#4d84ff');
+  var reader=new FileReader();
+  reader.onload=function(ev){
+    var b64=ev.target.result.split(',')[1];
+    var prompt='Analyse ce ticket de pari sportif. Réponds UNIQUEMENT en JSON (sans markdown ni backticks): {"equipe":"nom","adversaire":"vs qui","competition":"ligue","sport":"football","bookmaker":"winamax","cote":1.85,"mise":10,"date":"YYYY-MM-DD","selections":[{"type":"Victoire","cote":1.85}]}';
+    fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key='+key,{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({contents:[{parts:[{inline_data:{mime_type:file.type||'image/jpeg',data:b64}},{text:prompt}]}]})
+    })
+    .then(function(r){return r.json();})
+    .then(function(d){
+      var text=((((d.candidates||[])[0]||{}).content||{}).parts||[{text:'{}'}])[0].text||'{}';
+      try{
+        var parsed=JSON.parse(text.replace(/```json|```/g,'').trim());
+        applyGemData(parsed);
+        showGemSt('✅ Ticket analysé ! Vérifie et transfère.','#1ed760');
+      }catch(e){showGemSt('⚠ Impossible de lire — entre manuellement','#f0b020');}
+    })
+    .catch(function(e){showGemSt('❌ Erreur réseau : '+e.message,'#ff4545');});
+  };
+  reader.readAsDataURL(file);
+}
+function showGemSt(msg,color){
+  var s=$i('gem-status');if(!s)return;
+  s.style.display='block';s.style.color=color;s.style.background=color+'14';s.innerText=msg;
+}
+function applyGemData(d){
+  var sportMap={football:'⚽',basket:'🏀',tennis:'🎾',hockey:'🏒',baseball:'⚾'};
+  if(d.bookmaker){var qb=$i('qp-book');if(qb)for(var i=0;i<qb.options.length;i++){if(qb.options[i].value.toLowerCase().includes((d.bookmaker||'').toLowerCase().split(' ')[0])){qb.selectedIndex=i;break;}}}
+  var qm=$i('qp-match');if(qm)qm.value=[d.equipe,d.adversaire].filter(Boolean).join(' vs ')||'';
+  var qc=$i('qp-comp');if(qc)qc.value=d.competition||'';
+  var qmi=$i('qp-mise');if(qmi&&d.mise)qmi.value=parseFloat(d.mise).toFixed(2);
+  if(d.date){var qd=$i('qp-date');if(qd)qd.value=d.date.replace(/(\d{2})\/(\d{2})\/(\d{4})/,'$3-$2-$1').substring(0,10);}
+  if(d.equipe){var qu=$i('qp-unit');if(qu)for(var j=0;j<qu.options.length;j++){if(qu.options[j].value.toLowerCase().includes((d.equipe||'').toLowerCase().substring(0,5))){qu.selectedIndex=j;break;}}}
+  if(d.selections&&d.selections.length)_qpSels=d.selections.map(function(s){return{type:s.type||'—',cote:parseFloat(s.cote)||1.5};});
+  else if(d.cote)_qpSels=[{type:'Victoire',cote:parseFloat(d.cote)||1.5}];
+  renderQpSels();
+}
+function addQpSel(){
+  var t=($i('qp-sel-type')&&$i('qp-sel-type').value||'').trim();
+  var c=parseFloat(($i('qp-sel-cote')&&$i('qp-sel-cote').value)||1.5);
+  if(!t)return;
+  _qpSels.push({type:t,cote:c});
+  var ti=$i('qp-sel-type');if(ti)ti.value='';
+  renderQpSels();
+}
+function renderQpSels(){
+  var el=$i('qp-sel-list');if(!el)return;
+  if(!_qpSels.length){el.innerHTML='';return;}
+  el.innerHTML=_qpSels.map(function(s,i){
+    return '<div style="display:flex;align-items:center;gap:7px;padding:6px 9px;background:var(--bg3);border-radius:var(--r4);margin-bottom:4px">'
+      +'<span style="flex:1;font-size:12px;font-weight:600">'+s.type+'</span>'
+      +'<span style="font-size:12px;font-weight:700;color:var(--a)">@'+s.cote+'</span>'
+      +'<button style="background:none;border:none;color:var(--t3);cursor:pointer;font-size:13px" data-idx="'+i+'" onclick="_qpSels.splice(+this.dataset.idx,1);renderQpSels()">✕</button>'
+      +'</div>';
+  }).join('');
+}
+function applyCapture(){
+  var isCockpit=$i('qp-mode-strat')&&$i('qp-mode-strat').checked;
+  var book=($i('qp-book')&&$i('qp-book').value)||'';
+  var match=($i('qp-match')&&$i('qp-match').value)||'';
+  var comp=($i('qp-comp')&&$i('qp-comp').value)||'';
+  var mise=($i('qp-mise')&&$i('qp-mise').value)||'';
+  var date=($i('qp-date')&&$i('qp-date').value)||'';
+  if(isCockpit){
+    var uval=$i('qp-unit')&&$i('qp-unit').value;
+    var cu=$i('c-unit');if(cu&&uval){cu.value=uval;updMise();}
+    var cb=$i('c-book');if(cb)cb.value=book;
+    var cc=$i('c-comp');if(cc)cc.value=comp;
+    var ct=$i('c-target');if(ct)ct.value=match;
+    var cd=$i('c-date');if(cd)cd.value=date;
+    var cm=$i('c-mise');if(cm&&mise)cm.value=mise;
+    /* Apply selections to MyMatch */
+    if(_qpSels.length){
+      mmRows=_qpSels.map(function(s){return{type:s.type,cote:s.cote};});
+      renderMmRows();
+    }
+    renderCrash();
+    closeCapture();
+    showTab('t-paris',document.querySelectorAll('.ni')[1]);
+    swBet('strat');
+  } else {
+    var nb=$i('n-book');if(nb)nb.value=book;
+    var nc=$i('n-comp');if(nc)nc.value=comp;
+    var nd=$i('n-date');if(nd)nd.value=date;
+    if(_qpSels.length){
+      var nt=$i('n-type');if(nt)nt.value=_qpSels.map(function(s){return s.type;}).join(' + ');
+      var nc2=$i('n-cote');if(nc2)nc2.value=_qpSels.reduce(function(a,s){return a*(s.cote||1);},1).toFixed(2);
+    }
+    var nm=$i('n-mise');if(nm&&mise)nm.value=mise;
+    closeCapture();
+    showTab('t-paris',document.querySelectorAll('.ni')[1]);
+    swBet('simple');
+  }
+}
+document.addEventListener('click',function(e){
+  var m=$i('capture-modal');if(m&&e.target===m)closeCapture();
+});
 
 /* ── INIT ── */
 document.querySelectorAll('.tab').forEach(function(t){t.style.display='none';});
