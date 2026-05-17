@@ -538,43 +538,44 @@ input[type="date"],input[type="time"]{color-scheme:dark;}
       <div style="font-size:14px;font-weight:700">📷 Capture ticket</div>
       <button onclick="closeCapture()" style="background:none;border:1px solid rgba(255,69,69,.3);color:var(--r);border-radius:4px;padding:3px 10px;cursor:pointer;font-size:11px;font-weight:700">✕ Fermer</button>
     </div>
-    <!-- GEMINI -->
-    <div style="background:var(--bg3);border-radius:var(--r6);padding:11px 13px;margin-bottom:12px">
-      <div style="font-size:11px;font-weight:700;color:var(--t2);margin-bottom:7px">🤖 Analyse Gemini (gratuit — <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:var(--a);text-decoration:none">clé ici ↗</a>)</div>
-      <input id="gemini-key-inp" type="password" class="fi" placeholder="Clé Gemini API…" style="margin-bottom:7px" oninput="localStorage.setItem('g45_gem',this.value)">
-      <label style="display:flex;align-items:center;justify-content:center;gap:7px;background:rgba(77,132,255,.1);border:1px dashed rgba(77,132,255,.3);border-radius:var(--r6);padding:11px;cursor:pointer;font-size:12px;font-weight:600;color:var(--a)">
-        📸 Choisir une photo du ticket
-        <input type="file" accept="image/*" style="display:none" onchange="geminiAnalyze(this)">
+    <!-- GEMINI SECTION -->
+    <div style="background:var(--bg3);border-radius:var(--r6);padding:11px 13px;margin-bottom:10px">
+      <div style="font-size:10px;font-weight:700;color:var(--t2);margin-bottom:6px">🤖 Gemini Vision — <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:var(--a);text-decoration:none">Clé gratuite ↗</a></div>
+      <input id="gemini-key-inp" type="password" class="fi" placeholder="Clé API Gemini (AIza…)" style="margin-bottom:6px;font-size:12px" oninput="localStorage.setItem('g45_gem',this.value)">
+      <label style="display:flex;align-items:center;justify-content:center;gap:7px;background:rgba(77,132,255,.12);border:1px dashed rgba(77,132,255,.3);border-radius:var(--r6);padding:10px;cursor:pointer;font-size:12px;font-weight:700;color:var(--a)">
+        📸 Analyser une photo du ticket
+        <input type="file" accept="image/*" capture="environment" style="display:none" onchange="geminiAnalyze(this)">
       </label>
-      <div id="gem-status" style="display:none;margin-top:7px;padding:7px 10px;border-radius:var(--r4);font-size:11px;font-weight:600"></div>
+      <div id="gem-status" style="display:none;margin-top:6px;padding:6px 10px;border-radius:var(--r4);font-size:11px;font-weight:600;text-align:center"></div>
     </div>
-    <!-- MODE -->
-    <div style="display:flex;gap:6px;margin-bottom:12px">
-      <label style="flex:1;display:flex;align-items:center;gap:6px;padding:9px;background:var(--s1);border-radius:var(--r6);cursor:pointer;font-size:12px;font-weight:600">
+    <!-- MODE Cockpit / Simple -->
+    <div style="display:flex;gap:6px;margin-bottom:10px">
+      <label style="flex:1;display:flex;align-items:center;gap:6px;padding:8px 10px;background:var(--s1);border:1px solid var(--b1);border-radius:var(--r6);cursor:pointer;font-size:12px;font-weight:600">
         <input type="radio" id="qp-mode-strat" name="qp-mode" checked style="accent-color:var(--a)"> 🚀 Cockpit
       </label>
-      <label style="flex:1;display:flex;align-items:center;gap:6px;padding:9px;background:var(--s1);border-radius:var(--r6);cursor:pointer;font-size:12px;font-weight:600">
+      <label style="flex:1;display:flex;align-items:center;gap:6px;padding:8px 10px;background:var(--s1);border:1px solid var(--b1);border-radius:var(--r6);cursor:pointer;font-size:12px;font-weight:600">
         <input type="radio" name="qp-mode" style="accent-color:var(--a)"> 🎯 Simple
       </label>
     </div>
-    <!-- FIELDS -->
-    <div class="g2" style="gap:8px;margin-bottom:10px">
-      <div class="fg"><label class="fl">Équipe</label><select id="qp-unit" class="fi"></select></div>
-      <div class="fg"><label class="fl">Bookmaker</label><select id="qp-book" class="fi"></select></div>
-      <div class="fg"><label class="fl">Mise (€)</label><input type="number" id="qp-mise" class="fi"></div>
-      <div class="fg"><label class="fl">Date</label><input type="date" id="qp-date" class="fi" style="color-scheme:dark"></div>
-      <div class="fg" style="grid-column:span 2"><label class="fl">Match / Adversaire</label><input id="qp-match" class="fi" placeholder="PSG vs Lyon…"></div>
-      <div class="fg" style="grid-column:span 2"><label class="fl">Compétition</label><input id="qp-comp" class="fi" placeholder="Ligue 1…"></div>
+    <!-- CHAMPS -->
+    <div class="g2" style="gap:7px;margin-bottom:8px">
+      <div class="fg"><label class="fl">Équipe</label><select id="qp-unit" class="fi" style="font-size:12px"></select></div>
+      <div class="fg"><label class="fl">Bookmaker</label><select id="qp-book" class="fi" style="font-size:12px"></select></div>
+      <div class="fg"><label class="fl">Mise (€)</label><input type="number" id="qp-mise" class="fi" style="font-size:12px"></div>
+      <div class="fg"><label class="fl">Date</label><input type="date" id="qp-date" class="fi" style="color-scheme:dark;font-size:12px"></div>
+      <div class="fg" style="grid-column:span 2"><label class="fl">Adversaire / Match</label><input id="qp-match" class="fi" placeholder="PSG vs Lyon…" style="font-size:12px"></div>
+      <div class="fg" style="grid-column:span 2"><label class="fl">Compétition</label><input id="qp-comp" class="fi" placeholder="Ligue 1, Champions League…" style="font-size:12px"></div>
     </div>
     <!-- SELECTIONS -->
-    <label class="fl">Sélections MyMatch</label>
-    <div id="qp-sel-list" style="margin:5px 0 8px"></div>
-    <div style="display:flex;gap:6px;margin-bottom:12px">
-      <input id="qp-sel-type" class="fi" placeholder="Victoire…" style="flex:1">
-      <input type="number" id="qp-sel-cote" class="fi" placeholder="Cote" step="0.01" style="width:72px;color:var(--a);font-weight:700">
-      <button onclick="addQpSel()" style="padding:7px 11px;background:rgba(77,132,255,.14);color:var(--a);border:1px solid rgba(77,132,255,.3);border-radius:var(--r4);font-size:11px;font-weight:700;cursor:pointer">+</button>
+    <div style="font-size:9px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--a);margin-bottom:4px">Sélections</div>
+    <div id="qp-sel-list" style="margin-bottom:6px"></div>
+    <div style="display:flex;gap:5px;margin-bottom:12px">
+      <input id="qp-sel-type" class="fi" placeholder="Type ex: Victoire" style="flex:1;font-size:12px">
+      <input type="number" id="qp-sel-cote" class="fi" placeholder="Cote" step="0.01" style="width:68px;color:var(--a);font-weight:700;font-size:12px">
+      <button onclick="addQpSel()" style="padding:7px 11px;background:rgba(77,132,255,.15);color:var(--a);border:1px solid rgba(77,132,255,.3);border-radius:var(--r4);font-size:13px;font-weight:700;cursor:pointer">+</button>
     </div>
-    <button onclick="applyCapture()" class="btn btn-p">✅ Transférer dans le formulaire</button>
+    <!-- BOUTON TRANSFÉRER -->
+    <button onclick="applyCapture()" style="width:100%;padding:13px;border:none;border-radius:var(--r6);background:var(--a);color:#fff;font-size:14px;font-weight:700;cursor:pointer;letter-spacing:.3px">✅ Transférer dans le formulaire</button>
   </div>
 </div>
 
