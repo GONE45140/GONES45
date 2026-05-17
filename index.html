@@ -742,7 +742,7 @@ function renderCrash(){
   var uSel=$i('c-unit');
   if(!uSel||!uSel.value){return;}
   var u=state.u.find(function(x){return x.n===uSel.value;});
-  if(!u){$i('crash-grid').innerHTML='<div style="color:var(--t3);font-size:11px;grid-column:span 4;text-align:center;padding:8px;">Paliers N/A</div>';return;}
+  if(!u){var _cg=$i('crash-grid');if(_cg)_cg.innerHTML='<div style="color:var(--t3);font-size:11px;grid-column:span 4;text-align:center;padding:8px;">Paliers N/A</div>';return;}
   var s=String(u.s||1);
   var strat=STRATS[s]||STRATS["1"];
   var cote=parseFloat(($i('c-cote')&&$i('c-cote').value)||1.5)||1.5;
@@ -761,7 +761,7 @@ function renderCrash(){
       +'<div class="cc-v" style="color:'+(cls==='danger'?'var(--r)':cls==='warning'?'var(--gold)':'var(--g)')+';">'+mise+'€</div>'
       +'<div class="cc-g">+'+gain+'€</div></div>';
   }
-  $i('crash-grid').innerHTML=html;
+  var cg=$i('crash-grid');if(cg){cg.innerHTML=html;}
   var al=$i('crash-alert');
   if(al){
     if(alertMsg){al.classList.add('show');$i('crash-txt').innerText=alertMsg;}
@@ -1635,48 +1635,52 @@ function closeCapture(){
 function geminiAnalyze(inp){
   var file=inp.files[0];if(!file)return;
   var key=($i('gemini-key-inp')&&$i('gemini-key-inp').value||'').trim();
-  if(!key){showGemSt('❌ Entre ta clé Gemini (AIza…)','#ff4545');return;}
-  showGemSt('⏳ Analyse en cours…','#4d84ff');
-  var reader=new FileReader();
-  reader.onload=function(ev){
-    var b64=ev.target.result.split(',')[1];
-    var mime=file.type||'image/jpeg';
-    var prompt='Tu es un assistant qui analyse des tickets de paris sportifs. Regarde cette image et extrais les informations. Réponds UNIQUEMENT avec un objet JSON valide, sans markdown, sans backticks, sans explication. Format exact: {"equipe":"nom equipe suivie","adversaire":"equipe adverse ou match complet","competition":"nom competition","sport":"football","bookmaker":"nom bookmaker","cote":1.85,"mise":10,"date":"2026-05-17","selections":[{"type":"Victoire","cote":1.85},{"type":"BTS Oui","cote":1.30}]}';
+  if(!key){showGemSt('❌ Entre ta clé Gemini','#ff4545');return;}
+  showGemSt('⏳ Compression…','#4d84ff');
+  /* Resize image to max 1024px to avoid HTTP 400 */
+  var img=new Image();
+  var url=URL.createObjectURL(file);
+  img.onload=function(){
+    var MAX=1024;
+    var w=img.width,h=img.height;
+    if(w>MAX||h>MAX){var r=Math.min(MAX/w,MAX/h);w=Math.round(w*r);h=Math.round(h*r);}
+    var canvas=document.createElement('canvas');canvas.width=w;canvas.height=h;
+    var ctx2=canvas.getContext('2d');ctx2.drawImage(img,0,0,w,h);
+    URL.revokeObjectURL(url);
+    var b64=canvas.toDataURL('image/jpeg',0.85).split(',')[1];
+    showGemSt('⏳ Analyse Gemini…','#4d84ff');
+    var prompt='Analyse ce ticket de pari sportif. Réponds UNIQUEMENT avec un JSON valide, sans markdown ni backtick. Format: {"equipe":"","adversaire":"","competition":"","sport":"football","bookmaker":"","cote":1.5,"mise":10,"date":"2026-05-17","selections":[{"type":"Victoire","cote":1.5}]}';
     fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key='+key,{
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({
         contents:[{parts:[
-          {inline_data:{mime_type:mime,data:b64}},
+          {inline_data:{mime_type:'image/jpeg',data:b64}},
           {text:prompt}
         ]}],
         generationConfig:{temperature:0,maxOutputTokens:512}
       })
     })
     .then(function(r){
-      if(!r.ok)throw new Error('HTTP '+r.status);
+      if(!r.ok)return r.json().then(function(e){throw new Error('HTTP '+r.status+' : '+(e.error&&e.error.message||''));});
       return r.json();
     })
     .then(function(d){
-      if(d.error){showGemSt('❌ API : '+d.error.message,'#ff4545');return;}
-      var raw=((((d.candidates||[])[0]||{}).content||{}).parts||[])[0];
-      var text=(raw&&raw.text)||'';
-      /* Robuste : extraire le JSON même si Gemini ajoute du texte */
-      var jsonStr=text;
-      var m1=text.match(/\{[\s\S]*\}/);
-      if(m1)jsonStr=m1[0];
-      jsonStr=jsonStr.replace(/```json/g,'').replace(/```/g,'').trim();
+      if(d.error){showGemSt('❌ '+d.error.message,'#ff4545');return;}
+      var parts=((((d.candidates||[])[0]||{}).content||{}).parts)||[];
+      var text=(parts[0]&&parts[0].text)||'';
+      var m=text.match(/\{[\s\S]*\}/);
+      if(!m){showGemSt('⚠ Pas de JSON dans la réponse — saisis manuellement','#f0b020');return;}
       try{
-        var parsed=JSON.parse(jsonStr);
+        var parsed=JSON.parse(m[0]);
         applyGemData(parsed);
-        showGemSt('✅ Analysé ! Vérifie les champs et transfère.','#1ed760');
-      }catch(e){
-        showGemSt('⚠ JSON invalide — saisis manuellement\n('+text.substring(0,80)+')','#f0b020');
-      }
+        showGemSt('✅ Analysé ! Vérifie et transfère.','#1ed760');
+      }catch(e){showGemSt('⚠ JSON invalide — saisis manuellement','#f0b020');}
     })
     .catch(function(e){showGemSt('❌ '+e.message,'#ff4545');});
   };
-  reader.readAsDataURL(file);
+  img.onerror=function(){showGemSt('❌ Image illisible','#ff4545');};
+  img.src=url;
 }
 function showGemSt(msg,color){
   var s=$i('gem-status');if(!s)return;
@@ -1758,7 +1762,7 @@ document.addEventListener('click',function(e){
 /* ── INIT ── */
 document.querySelectorAll('.tab').forEach(function(t){t.style.display='none';});
 $i('t-dash').style.display='block';
-window.onload=function(){render();updMise();calcSb();buildDtRows();renderCrash();renderMmRows();};
+window.onload=function(){render();updMise();calcSb();buildDtRows();renderMmRows();};
 </script>
 </body>
 </html>
