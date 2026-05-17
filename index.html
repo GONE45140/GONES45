@@ -442,9 +442,11 @@ input[type="date"],input[type="time"]{color-scheme:dark;}
   <div class="sec">Calculateur</div>
   <div class="fc">
     <div class="calc-tabs">
-      <button class="ctbtn on" id="ct-sb" onclick="swCalc('sb')">Surebet</button>
-      <button class="ctbtn" id="ct-dt" onclick="swCalc('dt')">Dutching</button>
-    </div>
+  <button class="ctbtn on" id="ct-sb" onclick="swCalc('sb')">Surebet</button>
+  <button class="ctbtn" id="ct-dt" onclick="swCalc('dt')">Dutching</button>
+  <button class="ctbtn" id="ct-lay" onclick="swCalc('lay')">⚖ Lay</button>
+  <button class="ctbtn" id="ct-vb" onclick="swCalc('vb')">Value</button>
+</div>
     <div id="calc-sb">
       <div class="g2" style="gap:8px;margin-bottom:8px;">
         <div class="fg"><label class="fl">Cote A</label><input type="number" id="sb-c1" class="fi" value="2.10" step="0.01" oninput="calcSb()"></div>
@@ -463,6 +465,47 @@ input[type="date"],input[type="time"]{color-scheme:dark;}
         <label class="fl" style="margin:0;">Mise totale (€)</label>
         <input type="number" id="dt-tot" class="fi" style="width:100px;" value="50" oninput="calcDt()">
       </div>
+      <!-- LAY -->
+<div id="calc-lay" style="display:none">
+  <label style="display:flex;align-items:center;gap:8px;padding:9px;background:rgba(240,176,32,.08);border:1px solid rgba(240,176,32,.2);border-radius:var(--r6);cursor:pointer;margin-bottom:10px">
+    <input type="checkbox" id="lay-gorr" onchange="calcLay()" style="accent-color:var(--gold)">
+    <span style="font-size:11px;font-weight:700;color:var(--gold)">🎁 Gagner ou Remboursé (cash)</span>
+  </label>
+  <div class="g2" style="gap:8px;margin-bottom:8px">
+    <div class="fg"><label class="fl">Cote Back</label><input type="number" id="lay-bc" class="fi" value="2.50" step="0.01" style="color:var(--g);font-weight:700" oninput="calcLay()"></div>
+    <div class="fg"><label class="fl">Mise Back (€)</label><input type="number" id="lay-bm" class="fi" value="10" oninput="calcLay()"></div>
+    <div class="fg"><label class="fl">Cote Lay (Piwi)</label><input type="number" id="lay-lc" class="fi" value="2.60" step="0.01" style="color:var(--r);font-weight:700" oninput="calcLay()"></div>
+    <div class="fg"><label class="fl">Commission % (gains)</label><input type="number" id="lay-comm" class="fi" value="3" oninput="calcLay()"></div>
+  </div>
+  <div style="background:var(--bg3);border-radius:var(--r6);padding:9px 12px;margin-bottom:9px;display:flex;justify-content:space-between">
+    <div><div style="font-size:8px;color:var(--t3);text-transform:uppercase;letter-spacing:.7px">Cote réelle</div><div id="lay-rc" style="font-size:20px;font-weight:800;color:var(--r)">—</div></div>
+    <div style="text-align:right"><div style="font-size:8px;color:var(--t3);text-transform:uppercase;letter-spacing:.7px">Responsabilité</div><div id="lay-liab" style="font-size:20px;font-weight:800;color:var(--gold)">—</div></div>
+  </div>
+  <div class="calc-res">
+    <div class="cres-row"><span class="cres-l">Mise Lay optimale</span><span class="cres-v" id="lay-ml">—</span></div>
+    <div class="cres-row"><span class="cres-l">Profit si Back gagne</span><span class="cres-v" id="lay-pbw">—</span></div>
+    <div class="cres-row"><span class="cres-l">Profit si Lay gagne</span><span class="cres-v" id="lay-plw">—</span></div>
+    <div class="cres-row"><span class="cres-l">Profit garanti</span><span class="cres-v" id="lay-pg" style="font-size:15px;font-weight:800">—</span></div>
+    <div class="cres-row"><span class="cres-l">ROI</span><span class="cres-v" id="lay-roi">—</span></div>
+  </div>
+  <div id="lay-verd" style="display:none;margin-top:9px;padding:10px;border-radius:var(--r6);text-align:center;font-size:13px;font-weight:700"></div>
+</div>
+
+<!-- VALUE BET -->
+<div id="calc-vb" style="display:none">
+  <div class="g2" style="gap:8px;margin-bottom:8px">
+    <div class="fg"><label class="fl">Proba estimée (%)</label><input type="number" id="vb-prob" class="fi" value="55" oninput="calcVb()"></div>
+    <div class="fg"><label class="fl">Cote proposée</label><input type="number" id="vb-cote" class="fi" value="2.10" step="0.01" oninput="calcVb()"></div>
+    <div class="fg" style="grid-column:span 2"><label class="fl">Mise (€)</label><input type="number" id="vb-mise" class="fi" value="10" oninput="calcVb()"></div>
+  </div>
+  <div class="calc-res">
+    <div class="cres-row"><span class="cres-l">Cote juste</span><span class="cres-v" id="vb-fair">—</span></div>
+    <div class="cres-row"><span class="cres-l">Edge</span><span class="cres-v" id="vb-edge">—</span></div>
+    <div class="cres-row"><span class="cres-l">EV (valeur attendue)</span><span class="cres-v" id="vb-ev">—</span></div>
+    <div class="cres-row"><span class="cres-l">Kelly %</span><span class="cres-v" id="vb-kelly">—</span></div>
+  </div>
+  <div id="vb-verd" style="display:none;margin-top:9px;padding:10px;border-radius:var(--r6);text-align:center;font-size:13px;font-weight:700"></div>
+</div>
       <div id="dt-rows"></div>
       <button class="ba" style="width:100%;margin-top:6px;" onclick="addDtRow()">+ Ajouter une sélection</button>
       <div class="calc-res" style="margin-top:10px;">
@@ -758,12 +801,64 @@ function buildDtRows(){
 function calcDt(){buildDtRows();}
 function addDtRow(){dtRows.push({c:2.0});buildDtRows();}
 function swCalc(m){
-  var sb=$i('calc-sb');if(sb)sb.style.display=m==='sb'?'block':'none';
-  var dt=$i('calc-dt');if(dt)dt.style.display=m==='dt'?'block':'none';
-  var cs=$i('ct-sb');if(cs)cs.classList.toggle('on',m==='sb');
-  var cd=$i('ct-dt');if(cd)cd.classList.toggle('on',m==='dt');
+  ['sb','dt','lay','vb'].forEach(function(p){
+    var el=$i('calc-'+p);if(el)el.style.display=m===p?'block':'none';
+    var btn=$i('ct-'+p);if(btn)btn.classList.toggle('on',m===p);
+  });
   if(m==='dt')buildDtRows();
-  if(m==='sb')calcSb();
+  else if(m==='lay')calcLay();
+  else if(m==='vb')calcVb();
+  else calcSb();
+}
+  function calcLay(){
+  var bc=parseFloat(($i('lay-bc')&&$i('lay-bc').value)||0);
+  var bm=parseFloat(($i('lay-bm')&&$i('lay-bm').value)||0);
+  var lc=parseFloat(($i('lay-lc')&&$i('lay-lc').value)||0);
+  var comm=parseFloat(($i('lay-comm')&&$i('lay-comm').value)||3);
+  var gorr=$i('lay-gorr')&&$i('lay-gorr').checked;
+  if(!bc||!bm||!lc||bc<=1||lc<=1)return;
+  var lr=1+(lc-1)*(1-comm/100);
+  var ml,pbw,plw;
+  if(!gorr){ml=bm*bc/lr;pbw=bm*(bc-1)-ml*(lc-1);plw=ml*(lr-1)-bm;}
+  else{ml=bm*(bc-1)/lr;pbw=bm*(bc-1)-ml*(lc-1);plw=ml*(lr-1);}
+  var liab=ml*(lc-1);
+  var pg=Math.min(pbw,plw);
+  var roi=(bm+liab)>0?(pg/(bm+liab)*100).toFixed(2):0;
+  var rc=$i('lay-rc');if(rc)rc.innerText='@'+lr.toFixed(3);
+  var lb=$i('lay-liab');if(lb)lb.innerText=liab.toFixed(2)+'€';
+  var lml=$i('lay-ml');if(lml){lml.innerText=ml.toFixed(2)+'€';lml.style.color='var(--a)';}
+  var lpb=$i('lay-pbw');if(lpb){lpb.innerText=(pbw>=0?'+':'')+pbw.toFixed(2)+'€';lpb.style.color=pbw>=0?'var(--g)':'var(--r)';}
+  var lpl=$i('lay-plw');if(lpl){lpl.innerText=(plw>=0?'+':'')+plw.toFixed(2)+'€'+(gorr?' ✅':'');lpl.style.color=plw>=0?'var(--g)':'var(--r)';}
+  var lpg=$i('lay-pg');if(lpg){lpg.innerText=(pg>=0?'+':'')+pg.toFixed(2)+'€';lpg.style.color=pg>=0?'var(--g)':'var(--r)';}
+  var lr2=$i('lay-roi');if(lr2){lr2.innerText=roi+'%';lr2.style.color=parseFloat(roi)>0?'var(--g)':'var(--r)';}
+  var verd=$i('lay-verd');
+  if(verd){
+    verd.style.display='block';
+    var ok=pg>0;
+    verd.style.cssText='display:block;padding:10px;border-radius:8px;text-align:center;font-size:13px;font-weight:700;background:'+(ok?'rgba(30,215,96,.1)':'rgba(255,69,69,.1)')+';border:1px solid '+(ok?'rgba(30,215,96,.25)':'rgba(255,69,69,.25)')+';color:'+(ok?'var(--g)':'var(--r)');
+    verd.innerText=ok?'✅ Surebet ! +'+pg.toFixed(2)+'€ · ROI '+roi+'%':'❌ Pas de surebet';
+  }
+}
+function calcVb(){
+  var prob=parseFloat(($i('vb-prob')&&$i('vb-prob').value)||55);
+  var cote=parseFloat(($i('vb-cote')&&$i('vb-cote').value)||2.10);
+  var mise=parseFloat(($i('vb-mise')&&$i('vb-mise').value)||10);
+  if(!prob||!cote||prob<=0||prob>=100||cote<=1)return;
+  var p=prob/100;
+  var fair=(1/p).toFixed(3);
+  var edge=((p*cote-1)*100).toFixed(2);
+  var ev=(p*(cote-1)*mise-(1-p)*mise).toFixed(2);
+  var kelly=Math.max(0,(p-(1-p)/(cote-1))*100).toFixed(1);
+  txt('vb-fair',fair);
+  var ee=$i('vb-edge');if(ee){ee.innerText=edge+'%';ee.style.color=parseFloat(edge)>0?'var(--g)':'var(--r)';}
+  var ev2=$i('vb-ev');if(ev2){ev2.innerText=(parseFloat(ev)>=0?'+':'')+ev+'€';ev2.style.color=parseFloat(ev)>=0?'var(--g)':'var(--r)';}
+  txt('vb-kelly',kelly+'%');
+  var verd=$i('vb-verd');
+  if(verd){
+    var isV=parseFloat(edge)>0;var isS=parseFloat(edge)>5;
+    verd.style.cssText='display:block;padding:10px;border-radius:8px;text-align:center;font-size:13px;font-weight:700;background:'+(isS?'rgba(30,215,96,.1)':isV?'rgba(77,132,255,.1)':'rgba(255,69,69,.1)')+';border:1px solid '+(isS?'rgba(30,215,96,.25)':isV?'rgba(77,132,255,.25)':'rgba(255,69,69,.25)')+';color:'+(isS?'var(--g)':isV?'var(--a)':'var(--r)');
+    verd.innerText=isS?'🔥 Excellente value ! Edge +'+edge+'%':isV?'✅ Value bet +'+edge+'%':'❌ Pas de value ('+edge+'%)';
+  }
 }
 
 /* ── FILTRE BILAN ── */
