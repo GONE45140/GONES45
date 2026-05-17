@@ -441,10 +441,12 @@ input[type="date"],input[type="time"]{color-scheme:dark;}
   <div id="bk-stats"></div>
   <div class="sec">Calculateur</div>
   <div class="fc">
-    <div class="calc-tabs">
-      <button class="ctbtn on" id="ct-sb" onclick="swCalc('sb')">Surebet</button>
-      <button class="ctbtn" id="ct-dt" onclick="swCalc('dt')">Dutching</button>
-    </div>
+  <div class="calc-tabs">
+  <button class="ctbtn on" id="ct-sb" onclick="swCalc('sb')">Surebet</button>
+  <button class="ctbtn" id="ct-dt" onclick="swCalc('dt')">Dutching</button>
+  <button class="ctbtn" id="ct-lay" onclick="swCalc('lay')">⚖ Lay</button>
+  <button class="ctbtn" id="ct-vb" onclick="swCalc('vb')">Value</button>
+</div>
     <div id="calc-sb">
       <div class="g2" style="gap:8px;margin-bottom:8px;">
         <div class="fg"><label class="fl">Cote A</label><input type="number" id="sb-c1" class="fi" value="2.10" step="0.01" oninput="calcSb()"></div>
@@ -469,11 +471,65 @@ input[type="date"],input[type="time"]{color-scheme:dark;}
         <div class="cres-row"><span class="cres-l">Retour si victoire</span><span class="cres-v" id="dt-ret">—</span></div>
         <div class="cres-row"><span class="cres-l">Profit</span><span class="cres-v" id="dt-profit">—</span></div>
       </div>
+   <!-- VALUE BET -->
+    <div id="calc-vb" style="display:none">
+      <div class="g2" style="gap:8px;margin-bottom:8px">
+        <div class="fg"><label class="fl">Proba estimée (%)</label><input type="number" id="vb-prob" class="fi" value="55" oninput="calcVb()"></div>
+        <div class="fg"><label class="fl">Cote proposée</label><input type="number" id="vb-cote" class="fi" value="2.10" step="0.01" oninput="calcVb()"></div>
+        <div class="fg" style="grid-column:span 2"><label class="fl">Mise (€)</label><input type="number" id="vb-mise" class="fi" value="10" oninput="calcVb()"></div>
+      </div>
+      <div class="calc-res">
+        <div class="cres-row"><span class="cres-l">Cote juste</span><span class="cres-v" id="vb-fair">—</span></div>
+        <div class="cres-row"><span class="cres-l">Edge</span><span class="cres-v" id="vb-edge">—</span></div>
+        <div class="cres-row"><span class="cres-l">EV</span><span class="cres-v" id="vb-ev">—</span></div>
+        <div class="cres-row"><span class="cres-l">Kelly %</span><span class="cres-v" id="vb-kelly">—</span></div>
+      </div>
+      <div id="vb-verdict" style="display:none;margin-top:9px;padding:10px;border-radius:var(--r6);text-align:center;font-size:13px;font-weight:700"></div>
+    </div>
+    <!-- LAY -->
+    <div id="calc-lay" style="display:none">
+      <label style="display:flex;align-items:center;gap:8px;padding:9px;background:rgba(240,176,32,.08);border:1px solid rgba(240,176,32,.2);border-radius:var(--r6);cursor:pointer;margin-bottom:10px">
+        <input type="checkbox" id="lay-gorr" onchange="calcLay()" style="accent-color:var(--gold)">
+        <span style="font-size:11px;font-weight:700;color:var(--gold)">🎁 Gagner ou Remboursé (cash)</span>
+      </label>
+      <div class="g2" style="gap:8px;margin-bottom:8px">
+        <div class="fg"><label class="fl">Cote Back</label><input type="number" id="lay-back-cote" class="fi" value="2.50" step="0.01" style="color:var(--g);font-weight:700" oninput="calcLay()"></div>
+        <div class="fg"><label class="fl">Mise Back (€)</label><input type="number" id="lay-back-mise" class="fi" value="10" oninput="calcLay()"></div>
+        <div class="fg"><label class="fl">Cote Lay (Piwi)</label><input type="number" id="lay-lay-cote" class="fi" value="2.60" step="0.01" style="color:var(--r);font-weight:700" oninput="calcLay()"></div>
+        <div class="fg"><label class="fl">Commission % (gains)</label><input type="number" id="lay-commission" class="fi" value="3" oninput="calcLay()"></div>
+      </div>
+      <div style="background:var(--bg3);border-radius:var(--r6);padding:9px 12px;margin-bottom:9px;display:flex;justify-content:space-between">
+        <div><div style="font-size:8px;color:var(--t3);text-transform:uppercase;letter-spacing:.7px">Cote réelle</div><div id="lay-real-cote" style="font-size:20px;font-weight:800;color:var(--r)">—</div></div>
+        <div style="text-align:right"><div style="font-size:8px;color:var(--t3);text-transform:uppercase;letter-spacing:.7px">Responsabilité</div><div id="lay-liability" style="font-size:20px;font-weight:800;color:var(--gold)">—</div></div>
+      </div>
+      <div class="calc-res">
+        <div class="cres-row"><span class="cres-l">Mise Lay optimale</span><span class="cres-v" id="lay-mise-opt">—</span></div>
+        <div class="cres-row"><span class="cres-l">Profit si Back gagne</span><span class="cres-v" id="lay-profit-back">—</span></div>
+        <div class="cres-row"><span class="cres-l">Profit si Lay gagne</span><span class="cres-v" id="lay-profit-lay">—</span></div>
+        <div class="cres-row"><span class="cres-l">Profit garanti</span><span class="cres-v" id="lay-profit-garanti" style="font-size:15px;font-weight:800">—</span></div>
+        <div class="cres-row"><span class="cres-l">ROI</span><span class="cres-v" id="lay-roi">—</span></div>
+      </div>
+      <div id="lay-verdict" style="display:none;margin-top:9px;padding:10px;border-radius:var(--r6);text-align:center;font-size:13px;font-weight:700"></div>
+      <div style="border-top:1px solid var(--b1);margin-top:14px;padding-top:12px">
+        <div style="font-size:10px;font-weight:700;color:var(--gold);margin-bottom:9px">🎟 Freebet → Cash</div>
+        <div class="g2" style="gap:8px;margin-bottom:8px">
+          <div class="fg"><label class="fl">Freebet (€)</label><input type="number" id="fb-amount" class="fi" value="10" style="color:var(--gold);font-weight:700" oninput="calcFreebet()"></div>
+          <div class="fg"><label class="fl">Cote Back</label><input type="number" id="fb-back-cote" class="fi" value="5.00" step="0.01" style="color:var(--g);font-weight:700" oninput="calcFreebet()"></div>
+          <div class="fg"><label class="fl">Cote Lay</label><input type="number" id="fb-lay-cote" class="fi" value="5.20" step="0.01" style="color:var(--r);font-weight:700" oninput="calcFreebet()"></div>
+          <div class="fg"><label class="fl">Commission %</label><input type="number" id="fb-comm" class="fi" value="3" oninput="calcFreebet()"></div>
+        </div>
+        <div class="calc-res">
+          <div class="cres-row"><span class="cres-l">Mise Lay</span><span class="cres-v" id="fb-lay-mise">—</span></div>
+          <div class="cres-row"><span class="cres-l">Responsabilité</span><span class="cres-v" id="fb-liability">—</span></div>
+          <div class="cres-row"><span class="cres-l">Cash garanti</span><span class="cres-v" id="fb-cash" style="font-size:15px;font-weight:800;color:var(--g)">—</span></div>
+        </div>
+        <div id="fb-verdict" style="display:none;margin-top:8px;padding:9px;border-radius:var(--r6);font-size:12px;font-weight:700;text-align:center"></div>
+      </div>
     </div>
   </div>
 </div>
-
-<!-- BANK -->
+    
+  <!-- BANK -->
 <div id="t-bank" class="tab">
   <div class="sec">Mouvement de fonds</div>
   <div class="fc">
@@ -758,12 +814,83 @@ function buildDtRows(){
 function calcDt(){buildDtRows();}
 function addDtRow(){dtRows.push({c:2.0});buildDtRows();}
 function swCalc(m){
-  var sb=$i('calc-sb');if(sb)sb.style.display=m==='sb'?'block':'none';
-  var dt=$i('calc-dt');if(dt)dt.style.display=m==='dt'?'block':'none';
-  var cs=$i('ct-sb');if(cs)cs.classList.toggle('on',m==='sb');
-  var cd=$i('ct-dt');if(cd)cd.classList.toggle('on',m==='dt');
+  ['sb','dt','vb','lay'].forEach(function(p){
+    var el=$i('calc-'+p);if(el)el.style.display=m===p?'block':'none';
+    var btn=$i('ct-'+p);if(btn)btn.classList.toggle('on',m===p);
+  });
   if(m==='dt')buildDtRows();
-  if(m==='sb')calcSb();
+  else if(m==='vb')calcVb();
+  else if(m==='lay'){calcLay();calcFreebet();}
+  else calcSb();
+}
+function calcVb(){
+  var p=(parseFloat(($i('vb-prob')&&$i('vb-prob').value)||55))/100;
+  var c=parseFloat(($i('vb-cote')&&$i('vb-cote').value)||2.10);
+  var m=parseFloat(($i('vb-mise')&&$i('vb-mise').value)||10);
+  if(!p||!c||p<=0||p>=1||c<=1)return;
+  var fair=(1/p).toFixed(3);
+  var edge=((p*c-1)*100).toFixed(2);
+  var ev=(p*(c-1)*m-(1-p)*m).toFixed(2);
+  var kelly=Math.max(0,(p-(1-p)/(c-1))*100).toFixed(1);
+  txt('vb-fair',fair);
+  var ee=$i('vb-edge');if(ee){ee.innerText=edge+'%';ee.style.color=parseFloat(edge)>0?'var(--g)':'var(--r)';}
+  var ev2=$i('vb-ev');if(ev2){ev2.innerText=(parseFloat(ev)>=0?'+':'')+ev+'€';ev2.style.color=parseFloat(ev)>=0?'var(--g)':'var(--r)';}
+  txt('vb-kelly',kelly+'%');
+  var verd=$i('vb-verdict');
+  if(verd){
+    verd.style.display='block';
+    var isV=parseFloat(edge)>0;var isS=parseFloat(edge)>5;
+    verd.style.cssText='display:block;padding:10px;border-radius:var(--r6);text-align:center;font-size:13px;font-weight:700;background:'+(isS?'rgba(30,215,96,.1)':isV?'rgba(77,132,255,.1)':'rgba(255,69,69,.1)')+';border:1px solid '+(isS?'rgba(30,215,96,.25)':isV?'rgba(77,132,255,.25)':'rgba(255,69,69,.25)')+';color:'+(isS?'var(--g)':isV?'var(--a)':'var(--r)');
+    verd.innerText=isS?'🔥 Value ! Edge +'+edge+'%':isV?'✅ Value bet +'+edge+'%':'❌ Pas de value';
+  }
+}
+function calcLay(){
+  var bc=parseFloat(($i('lay-back-cote')&&$i('lay-back-cote').value)||0);
+  var bm=parseFloat(($i('lay-back-mise')&&$i('lay-back-mise').value)||0);
+  var lc=parseFloat(($i('lay-lay-cote')&&$i('lay-lay-cote').value)||0);
+  var comm=parseFloat(($i('lay-commission')&&$i('lay-commission').value)||3);
+  var gorr=$i('lay-gorr')&&$i('lay-gorr').checked;
+  if(!bc||!bm||!lc||bc<=1||lc<=1)return;
+  var lr=1+(lc-1)*(1-comm/100);
+  var ml,pbw,plw;
+  if(!gorr){ml=bm*bc/lr;pbw=bm*(bc-1)-ml*(lc-1);plw=ml*(lr-1)-bm;}
+  else{ml=bm*(bc-1)/lr;pbw=bm*(bc-1)-ml*(lc-1);plw=ml*(lr-1);}
+  var liab=ml*(lc-1);var pg=Math.min(pbw,plw);
+  var roi=(bm+liab)>0?(pg/(bm+liab)*100).toFixed(2):0;
+  var lrc=$i('lay-real-cote');if(lrc)lrc.innerText='@'+lr.toFixed(3);
+  var ll=$i('lay-liability');if(ll)ll.innerText=liab.toFixed(2)+'€';
+  var lmo=$i('lay-mise-opt');if(lmo){lmo.innerText=ml.toFixed(2)+'€';lmo.style.color='var(--a)';}
+  var lpb=$i('lay-profit-back');if(lpb){lpb.innerText=(pbw>=0?'+':'')+pbw.toFixed(2)+'€';lpb.style.color=pbw>=0?'var(--g)':'var(--r)';}
+  var lpl=$i('lay-profit-lay');if(lpl){lpl.innerText=(plw>=0?'+':'')+plw.toFixed(2)+'€'+(gorr?' ✅':'');lpl.style.color=plw>=0?'var(--g)':'var(--r)';}
+  var lpg=$i('lay-profit-garanti');if(lpg){lpg.innerText=(pg>=0?'+':'')+pg.toFixed(2)+'€';lpg.style.color=pg>=0?'var(--g)':'var(--r)';}
+  var lr2=$i('lay-roi');if(lr2){lr2.innerText=roi+'%';lr2.style.color=parseFloat(roi)>0?'var(--g)':'var(--r)';}
+  var verd=$i('lay-verdict');
+  if(verd){
+    verd.style.display='block';var isSb=pg>0;
+    verd.style.cssText='display:block;padding:10px;border-radius:var(--r6);text-align:center;font-size:13px;font-weight:700;background:'+(isSb?'rgba(30,215,96,.1)':'rgba(255,69,69,.1)')+';border:1px solid '+(isSb?'rgba(30,215,96,.25)':'rgba(255,69,69,.25)')+';color:'+(isSb?'var(--g)':'var(--r)');
+    verd.innerText=isSb?'✅ Surebet ! +'+pg.toFixed(2)+'€ · ROI '+roi+'%':'❌ Pas de surebet (lay réelle '+lr.toFixed(3)+' ≥ back '+bc+')';
+  }
+}
+function calcFreebet(){
+  var fb=parseFloat(($i('fb-amount')&&$i('fb-amount').value)||0);
+  var bc=parseFloat(($i('fb-back-cote')&&$i('fb-back-cote').value)||0);
+  var lc=parseFloat(($i('fb-lay-cote')&&$i('fb-lay-cote').value)||0);
+  var comm=parseFloat(($i('fb-comm')&&$i('fb-comm').value)||3);
+  if(!fb||!bc||!lc||bc<=1||lc<=1)return;
+  var lr=1+(lc-1)*(1-comm/100);
+  var ml=(bc-1)*fb/(lc-1+lr-1);
+  var liab=ml*(lc-1);
+  var cg=Math.min((bc-1)*fb-liab,ml*(lr-1));
+  var taux=fb>0?(cg/fb*100).toFixed(1):0;
+  var flm=$i('fb-lay-mise');if(flm){flm.innerText=ml.toFixed(2)+'€';flm.style.color='var(--a)';}
+  var fli=$i('fb-liability');if(fli){fli.innerText=liab.toFixed(2)+'€';fli.style.color='var(--gold)';}
+  var fc=$i('fb-cash');if(fc){fc.innerText=(cg>=0?'+':'')+cg.toFixed(2)+'€';fc.style.color=cg>=0?'var(--g)':'var(--r)';}
+  var verd=$i('fb-verdict');
+  if(verd){
+    verd.style.display='block';var great=parseFloat(taux)>70;var good=cg>0;
+    verd.style.cssText='display:block;padding:9px;border-radius:var(--r6);font-size:12px;font-weight:700;text-align:center;background:'+(great?'rgba(30,215,96,.1)':good?'rgba(77,132,255,.1)':'rgba(255,69,69,.1)')+';border:1px solid '+(great?'rgba(30,215,96,.25)':good?'rgba(77,132,255,.25)':'rgba(255,69,69,.25)')+';color:'+(great?'var(--g)':good?'var(--a)':'var(--r)');
+    verd.innerText=great?'🔥 '+taux+'% = +'+cg.toFixed(2)+'€':good?'✅ '+taux+'% = +'+cg.toFixed(2)+'€':'❌ Conversion négative';
+  }
 }
 
 /* ── FILTRE BILAN ── */
