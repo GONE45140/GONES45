@@ -2,12 +2,11 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' https: data: blob:;">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; img-src * data:; connect-src *; font-src * data:;">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>GONES45</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 :root{
@@ -1102,13 +1101,11 @@ function renderArchive(){
   var cz=$i('arch-chart');
   if(cz){
     if(!keys.length){cz.innerHTML='<div class="empty">Aucun historique</div>';return;}
-    cz.innerHTML='<div class="ctitle">Profit mensuel</div><div style="height:120px;position:relative;"><canvas id="ac"></canvas></div>';
-    setTimeout(function(){
-      var ctx=$i('ac');if(!ctx)return;
-      if(window._ac){try{window._ac.destroy();}catch(e){}}
-      window._ac=new Chart(ctx.getContext('2d'),{type:'bar',data:{labels:keys,datasets:[{data:profits,backgroundColor:profits.map(function(v){return v>=0?'rgba(30,215,96,.55)':'rgba(255,69,69,.55)';}),borderColor:profits.map(function(v){return v>=0?'#1ed760':'#ff4545';}),borderWidth:1,borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#4f5d88',font:{size:9}},grid:{display:false}},y:{ticks:{color:'#4f5d88',font:{size:9},callback:function(v){return v+'€';}},grid:{color:'rgba(255,255,255,.03)'}}}}});
-    },60);
+    cz.innerHTML='<div class="ctitle">Profit mensuel</div><div id="arch-bar-chart" style="padding:10px 0"></div>';
+    /* render simple bars */
+    var barEl=$i('arch-bar-chart');if(barEl){var maxP=Math.max.apply(null,profits.map(Math.abs).concat([1]));barEl.innerHTML=profits.map(function(v,i){var pct=(Math.abs(v)/maxP*100).toFixed(0);var c=v>=0?'var(--g)':'var(--r)';return '<div style="display:flex;align-items:center;gap:6px;margin-bottom:5px"><div style="font-size:10px;color:var(--t3);width:40px;flex-shrink:0">'+keys[i]+'</div><div style="flex:1;height:8px;background:var(--bg3);border-radius:4px;overflow:hidden"><div style="height:100%;width:'+pct+'%;background:'+c+'"></div></div><div style="font-size:10px;font-weight:700;color:'+c+';width:50px;text-align:right">'+(v>=0?'+':'')+v.toFixed(0)+'€</div></div>';}).join('');}
   }
+
   $i('arch-list').innerHTML=keys.map(function(key){
     var d=pm[key];var pC=d.profit>=0?'var(--g)':'var(--r)';
     var wr=d.paris.length?(d.wins/d.paris.length*100).toFixed(0):0;
@@ -1134,37 +1131,38 @@ function renderArchive(){
 function renderGlobalChart(){
   var gz=$i('global-zone');if(!gz)return;
   var ap=state.a.slice().reverse();
-  var cum=state.start_bk||0;
-  var curve=ap.map(function(h){cum+=(h.win?(h.m*h.cote)-h.m:-h.m);return parseFloat(cum.toFixed(2));});
-  if(!curve.length)curve.push(state.start_bk||0);
   var tot=state.a.reduce(function(a,h){return a+(h.win?(h.m*h.cote)-h.m:-h.m);},0);
   var wins=state.a.filter(function(h){return h.win;}).length,n=state.a.length;
   var wr=n?(wins/n*100).toFixed(1):0;
   var mise=state.a.reduce(function(a,h){return a+parseFloat(h.m);},0);
   var roi=mise?(tot/mise*100).toFixed(2):0;
-  var bC=tot>=0?'#1ed760':'#ff4545',rC=+roi>=0?'#1ed760':'#ff4545';
-  gz.innerHTML='<div class="gchart"><div class="gchart-area"><canvas id="cg"></canvas></div>'
-    +'<div class="gkpis">'
-    +'<div class="gk"><div class="gk-l">Paris</div><div class="gk-v" style="color:var(--a);">'+n+'</div></div>'
-    +'<div class="gk"><div class="gk-l">Bénéfice</div><div class="gk-v" style="color:'+bC+';">'+fmt(tot)+'</div></div>'
-    +'<div class="gk"><div class="gk-l">ROI</div><div class="gk-v" style="color:'+rC+';">'+roi+'%</div></div>'
-    +'<div class="gk"><div class="gk-l">Réussite</div><div class="gk-v">'+wr+'%</div></div>'
+  var bC=tot>=0?'var(--g)':'var(--r)',rC=+roi>=0?'var(--g)':'var(--r)';
+  /* Simple sparkline SVG */
+  var cum=state.start_bk||0;
+  var curve=ap.map(function(h){cum+=(h.win?(h.m*h.cote)-h.m:-h.m);return parseFloat(cum.toFixed(2));});
+  if(!curve.length)curve=[state.start_bk||0];
+  var svgHtml='';
+  if(curve.length>1){
+    var mn=Math.min.apply(null,curve),mx=Math.max.apply(null,curve);
+    var range=mx-mn||1;
+    var W=300,H=80;
+    var pts=curve.map(function(v,i){
+      var x=i/(curve.length-1)*W;
+      var y=H-(v-mn)/range*H;
+      return x+','+y;
+    }).join(' ');
+    svgHtml='<svg viewBox="0 0 300 80" style="width:100%;height:80px;display:block">'
+      +'<polyline points="'+pts+'" fill="none" stroke="#1ed760" stroke-width="2"/>'
+      +'</svg>';
+  }
+  gz.innerHTML='<div style="background:var(--bg2);border:1px solid var(--b1);border-radius:var(--r8);overflow:hidden;margin-bottom:12px">'
+    +(svgHtml?'<div style="padding:12px 12px 0">'+svgHtml+'</div>':'')
+    +'<div style="display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--b1)">'
+    +'<div style="padding:11px 6px;text-align:center;border-right:1px solid var(--b1)"><div style="font-size:8px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;color:var(--t3);margin-bottom:4px">Paris</div><div style="font-size:14px;font-weight:800;color:var(--a)">'+n+'</div></div>'
+    +'<div style="padding:11px 6px;text-align:center;border-right:1px solid var(--b1)"><div style="font-size:8px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;color:var(--t3);margin-bottom:4px">Bénéfice</div><div style="font-size:14px;font-weight:800;color:'+bC+'">'+fmt(tot)+'</div></div>'
+    +'<div style="padding:11px 6px;text-align:center;border-right:1px solid var(--b1)"><div style="font-size:8px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;color:var(--t3);margin-bottom:4px">ROI</div><div style="font-size:14px;font-weight:800;color:'+rC+'">'+roi+'%</div></div>'
+    +'<div style="padding:11px 6px;text-align:center"><div style="font-size:8px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;color:var(--t3);margin-bottom:4px">Réussite</div><div style="font-size:14px;font-weight:800">'+wr+'%</div></div>'
     +'</div></div>';
-  setTimeout(function(){
-    var ctx=$i('cg');if(!ctx)return;
-    if(GC){try{GC.destroy();}catch(e){}}
-    var ct=ctx.getContext('2d'),g=ct.createLinearGradient(0,0,0,170);
-    g.addColorStop(0,'rgba(30,215,96,.2)');g.addColorStop(1,'rgba(30,215,96,0)');
-    GC=new Chart(ct,{
-      type:'line',
-      data:{labels:curve.map(function(_,i){return i;}),datasets:[{data:curve,borderColor:'#1ed760',backgroundColor:g,borderWidth:2,fill:true,tension:.4,pointRadius:0,pointHoverRadius:4,pointHoverBackgroundColor:'#1ed760',pointHoverBorderColor:'#fff',pointHoverBorderWidth:2}]},
-      options:{
-        responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
-        plugins:{legend:{display:false},tooltip:{backgroundColor:'rgba(8,11,18,.96)',borderColor:'rgba(30,215,96,.25)',borderWidth:1,titleColor:'#4f5d88',bodyColor:'#1ed760',bodyFont:{weight:'bold'},callbacks:{label:function(i){return 'Capital : '+i.raw.toFixed(2)+'€';}}}},
-        scales:{x:{display:false},y:{grid:{color:'rgba(255,255,255,.03)'},border:{display:false},ticks:{color:'#4f5d88',font:{size:10},maxTicksLimit:4,callback:function(v){return v+'€';}}}}
-      }
-    });
-  },60);
 }
 
 /* ── ÉQUIPES ── */
@@ -1204,396 +1202,51 @@ function renderEquipes(){
       +'<div class="tstat"><div class="tstat-v" style="color:'+p.c+';">'+cote+'</div><div class="tstat-l">Cote moy</div></div>'
       +'</div></div>';
   }).join('');
-  setTimeout(function(){
-    state.u.forEach(function(u){
-      var paris=state.a.filter(function(h){return h.n===u.n;});if(!paris.length)return;
-      var p=gp(u),sid='mc'+u.n.replace(/[^a-z0-9]/gi,'_');
-      var ctx=$i(sid);if(!ctx)return;
-      var cum=0;
-      var data=[0].concat(paris.slice().reverse().map(function(h){cum+=(h.win?(h.m*h.cote)-h.m:-h.m);return parseFloat(cum.toFixed(2));}));
-      var c2=ctx.getContext('2d'),g=c2.createLinearGradient(0,0,0,55);
-      g.addColorStop(0,p.fade.replace('.12','.3'));g.addColorStop(1,'rgba(0,0,0,0)');
-      MC[u.n]=new Chart(c2,{type:'line',data:{labels:data.map(function(_,i){return i;}),datasets:[{data:data,borderColor:p.c,backgroundColor:g,borderWidth:1.5,fill:true,tension:.4,pointRadius:0}]},
-        options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{enabled:false}},scales:{x:{display:false},y:{display:false}}}});
-    });
-  },100);
-}
-
-/* ── DÉTAIL CLUB ── */
-function openClub(nom,idx){
-  _currentTeam=nom;
-  Object.values(AC).forEach(function(c){try{c.destroy();}catch(e){}});AC={};
-  var u=state.u.find(function(x){return x.n===nom;});
-  var p=gp(u||{color:PCOLS[0]});
-  var paris=state.a.filter(function(h){return h.n===nom;});
-  var profit=paris.reduce(function(a,h){return a+(h.win?(h.m*h.cote)-h.m:-h.m);},0);
-  var wins=paris.filter(function(h){return h.win;}).length;
-  var losses=paris.filter(function(h){return !h.win;}).length;
-  var wr=paris.length?(wins/paris.length*100).toFixed(0):0;
-  var cote=paris.length?(paris.reduce(function(a,h){return a+h.cote;},0)/paris.length).toFixed(2):'—';
-  var mise=paris.reduce(function(a,h){return a+parseFloat(h.m);},0);
-  var roi=mise?(profit/mise*100).toFixed(2):0;
-  var sk=streak(paris);
-  var RC=2*Math.PI*28;var RO=RC-(wr/100)*RC;
-  var gu=parseFloat(state.ugoals[nom])||0;var gp2=gu>0?Math.min(100,profit/gu*100):0;
-  var cum2=0;
-  var cv=[0].concat(paris.slice().reverse().map(function(h){cum2+=(h.win?(h.m*h.cote)-h.m:-h.m);return parseFloat(cum2.toFixed(2));}));
-  var lb=['Départ'].concat(paris.slice().reverse().map(function(h){return h.t||'';}));
-  var pm2={};paris.forEach(function(h){var pts=h.t?h.t.split(' ')[0].split('/'):['??','??'];var k=pts.length>=2?pts[1]+'/'+pts[0]:'?';if(!pm2[k])pm2[k]=0;pm2[k]+=(h.win?(h.m*h.cote)-h.m:-h.m);});
-  var mK=Object.keys(pm2),mV=mK.map(function(k){return parseFloat(pm2[k].toFixed(2));});
-  var link=FAV_LINKS[nom]?'<a href="'+FAV_LINKS[nom]+'" target="_blank" style="font-size:10px;color:var(--a);text-decoration:none;display:inline-flex;align-items:center;gap:4px;margin-top:5px;">📡 Flashscore ↗</a>':'';
-  var logo=logoHtml(nom,u?u.color:PCOLS[0],u?u.abbr:nom.substring(0,3),58);
-  var forme=formeHtml(paris,7);
-
-  $i('d-hero').innerHTML='<div class="dhero" style="background:'+p.bg+';border-bottom:1px solid '+p.border+';">'
-    +'<button class="dback" onclick="closeClub()"><i class="fa-solid fa-arrow-left"></i> Retour</button>'
-    +'<div class="dtop">'+logo
-    +'<div><div class="dname">'+(u&&u.sport?u.sport+' ':'')+nom+'</div>'
-    +'<div class="dsub">'+paris.length+' paris · '+'⭐'.repeat(u?u.s:1)+' · Palier '+(u?u.l:1)+'</div>'
-    +forme+link
-    +(sk.n>1?'<div class="spill" style="background:'+(sk.t?'rgba(30,215,96,.14)':'rgba(255,69,69,.12)')+';color:'+(sk.t?'var(--g)':'var(--r)')+';">'+(sk.t?'🔥':'❄️')+' '+sk.n+' consécutifs</div>':'')
-    +'</div></div></div>';
-
-  $i('ip-bilan').innerHTML=
-    '<div class="kpi2" style="margin-bottom:10px;">'
-    +'<div class="kpibox" style="--ac:'+p.c+';"><div class="kpi-l">Bénéfice</div><div class="kpi-v" style="color:'+(profit>=0?'var(--g)':'var(--r)')+';">'+fmt(profit)+'</div></div>'
-    +'<div class="kpibox" style="--ac:'+p.c+';"><div class="kpi-l">ROI</div><div class="kpi-v" style="color:'+( +roi>=0?'var(--g)':'var(--r)')+';">'+roi+'%</div></div>'
-    +'</div>'
-    +'<div class="card cp" style="margin-bottom:10px;"><div class="ringwrap">'
-    +'<div class="rsvg"><svg width="74" height="74" viewBox="0 0 74 74"><circle cx="37" cy="37" r="28" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="6"/><circle cx="37" cy="37" r="28" fill="none" stroke="'+p.c+'" stroke-width="6" stroke-dasharray="'+RC.toFixed(1)+'" stroke-dashoffset="'+RO.toFixed(1)+'" stroke-linecap="round"/></svg>'
-    +'<div class="rcenter"><div class="rv" style="color:'+p.c+';">'+wr+'%</div><div class="rl">réussite</div></div></div>'
-    +'<div><div style="font-size:12px;color:var(--g);font-weight:700;margin-bottom:5px;">✅ '+wins+' victoires</div>'
-    +'<div style="font-size:12px;color:var(--r);font-weight:700;margin-bottom:8px;">❌ '+losses+' défaites</div>'
-    +'<div style="font-size:11px;color:var(--t3);">Cote moy : <b style="color:var(--t1);">'+cote+'</b></div>'
-    +'<div style="font-size:11px;color:var(--t3);">Mise totale : <b style="color:var(--t1);">'+mise.toFixed(0)+'€</b></div>'
-    +'</div></div></div>'
-    +'<div class="card"><div style="display:flex;align-items:center;justify-content:space-between;padding:11px 14px;border-bottom:1px solid var(--b1);"><span style="font-size:11px;font-weight:600;color:var(--t2);">Objectif profit</span><button class="ba" data-nom="'+nom+'" onclick="setUG(this.dataset.nom)">MODIFIER</button></div>'
-    +'<div class="cp" style="padding:12px 14px;">'
-    +(gu>0
-      ?'<div class="prog-row"><span style="font-size:12px;font-weight:700;">'+fmt(profit)+'</span><span style="font-size:10px;color:var(--t3);">/ +'+gu+'€ · '+gp2.toFixed(1)+'%</span></div>'
-       +'<div class="prog-track"><div class="prog-fill" style="width:'+gp2.toFixed(1)+'%;background:'+(gp2>=100?'var(--g)':p.c)+';"></div></div>'
-       +'<div class="prog-meta"><span style="color:'+p.c+';">'+gp2.toFixed(1)+'%</span><span>'+(gp2>=100?'🎉 Atteint !':'Reste '+(gu-profit).toFixed(2)+'€')+'</span></div>'
-      :'<div style="font-size:12px;color:var(--t3);">Appuie sur Modifier pour définir un objectif.</div>')
-    +'</div></div>';
-
-  $i('ip-graphiques').innerHTML=
-    '<div class="cwrap"><div class="ctitle">Courbe de profit</div><div style="height:190px;position:relative;"><canvas id="dc-courbe"></canvas></div></div>'
-    +(mK.length?'<div class="cwrap"><div class="ctitle">Profit par mois</div><div style="height:150px;position:relative;"><canvas id="dc-mois"></canvas></div></div>':'');
-
-  /* archive */
-  var am2={};
-  paris.forEach(function(h){var pts=h.t?h.t.split(' ')[0].split('/'):['??','??'];var k=pts.length>=2?pts[1]+'/'+pts[0]:'?';if(!am2[k])am2[k]={paris:[],profit:0};am2[k].paris.push(h);am2[k].profit+=(h.win?(h.m*h.cote)-h.m:-h.m);});
-  if(paris.length){
-    $i('ip-archive').innerHTML=Object.keys(am2).map(function(key){
-      var d=am2[key];var pC=d.profit>=0?'var(--g)':'var(--r)';
-      return '<div class="mh"><div class="mh-lbl">'+key+' · '+d.paris.length+' paris</div><div class="mh-val" style="color:'+pC+';">'+fmt(d.profit)+'</div></div>'
-        +d.paris.map(function(h){
-          var b2=bki(h.b);var dd=h.date?'📅 '+h.date+' ':'';var hh=h.heure?'⏰ '+h.heure+' ':'';
-          return '<div class="brow '+(h.win?'w':'l')+'">'
-            +'<div class="brow-main"><div class="brow-title">'+(h.sport||'')+' '+h.target+'</div>'
-            +'<div class="brow-meta">'+h.t+' '+dd+hh+'· '+(h.type||'—')+' · @'+h.cote+' · <span style="color:'+b2.c+';">'+b2.n+'</span>'+(h.debrief?'<br><i>'+h.debrief+'</i>':'')+'</div></div>'
-            +'<div class="brow-right"><div class="brow-amt" style="color:'+(h.win?'var(--g)':'var(--r)')+';">'+(h.win?'+'+(h.m*h.cote).toFixed(2):'-'+h.m)+'€</div>'
-            +'<div class="brow-tag" style="color:'+(h.win?'var(--g)':'var(--r)')+';">'+(h.win?'WIN':'LOSS')+'</div></div></div>';
-        }).join('');
-    }).join('');
-  } else {
-    $i('ip-archive').innerHTML='<div class="empty">Aucun pari archivé</div>';
-  }
-
-  /* types */
-  var tm={};paris.forEach(function(h){var t=(h.type||'Autre').trim();if(!tm[t])tm[t]={n:0,wins:0,profit:0};tm[t].n++;if(h.win)tm[t].wins++;tm[t].profit+=(h.win?(h.m*h.cote)-h.m:-h.m);});
-  var ts=Object.entries(tm).sort(function(a,b){return b[1].n-a[1].n;});var maxN=ts.length?ts[0][1].n:1;
-  $i('ip-types').innerHTML=ts.length
-    ?'<div class="card cp">'+ts.map(function(e){
-        var t=e[0],d=e[1];var pct=(d.wins/d.n*100).toFixed(0);var pC=d.profit>=0?'var(--g)':'var(--r)';
-        return '<div class="tyrow"><div class="tyn">'+t+'</div>'
-          +'<div class="tytrack"><div class="tyfill" style="width:'+(d.n/maxN*100).toFixed(0)+'%;background:'+p.c+';"></div></div>'
-          +'<div class="typct" style="color:'+p.c+';">'+pct+'%</div>'
-          +'<div class="tyn2">'+d.n+'</div>'
-          +'<div class="typ" style="color:'+pC+';">'+fmt(d.profit)+'</div></div>';
-      }).join('')+'</div>'
-    :'<div class="empty">Aucun type</div>';
-
-  document.querySelectorAll('.itab').forEach(function(t){t.classList.remove('on');});
-  document.querySelectorAll('.ipanel').forEach(function(c){c.classList.remove('on');});
-  document.querySelector('.itab').classList.add('on');
-  $i('ip-bilan').classList.add('on');
-  $i('t-equipes').style.display='none';
-  $i('detail').style.display='block';
-
-  setTimeout(function(){
-    if(cv.length>1){
-      var ctx=$i('dc-courbe');
-      if(ctx){
-        var c3=ctx.getContext('2d');
-        var g=c3.createLinearGradient(0,0,0,180);
-        g.addColorStop(0,p.fade.replace('.12','.28'));g.addColorStop(1,'rgba(0,0,0,0)');
-        AC.courbe=new Chart(c3,{
-          type:'line',
-          data:{labels:lb,datasets:[{data:cv,borderColor:p.c,backgroundColor:g,borderWidth:2,fill:true,tension:.4,pointRadius:cv.length<12?3:0,pointBackgroundColor:p.c}]},
-          options:{
-            responsive:true,maintainAspectRatio:false,
-            plugins:{legend:{display:false},tooltip:{backgroundColor:'rgba(8,11,18,.96)',borderColor:p.border,borderWidth:1,titleColor:'#4f5d88',bodyColor:p.c,bodyFont:{weight:'bold'},callbacks:{title:function(ii){return lb[ii[0].dataIndex]||'';},label:function(ii){return (ii.raw>=0?'+':'')+ii.raw+'€';}}}},
-            scales:{x:{ticks:{color:'#4f5d88',font:{size:8},maxTicksLimit:6},grid:{display:false}},y:{grid:{color:'rgba(255,255,255,.03)'},ticks:{color:'#4f5d88',font:{size:9},callback:function(v){return v+'€';}}}}
-          }
-        });
-      }
-    }
-    if(mK.length){
-      var ctx2=$i('dc-mois');
-      if(ctx2){
-        AC.mois=new Chart(ctx2.getContext('2d'),{
-          type:'bar',
-          data:{labels:mK,datasets:[{data:mV,backgroundColor:mV.map(function(v){return v>=0?'rgba(30,215,96,.55)':'rgba(255,69,69,.55)';}),borderColor:mV.map(function(v){return v>=0?'#1ed760':'#ff4545';}),borderWidth:1,borderRadius:4}]},
-          options:{
-            responsive:true,maintainAspectRatio:false,
-            plugins:{legend:{display:false}},
-            scales:{x:{ticks:{color:'#4f5d88',font:{size:9}},grid:{display:false}},y:{ticks:{color:'#4f5d88',font:{size:9},callback:function(v){return v+'€';}},grid:{color:'rgba(255,255,255,.03)'}}}
-          }
-        });
-      }
-    }
-  },80);
-}
-
-function setUG(nom){var v=prompt('Objectif profit pour '+nom+' (€) :',state.ugoals[nom]||0);if(v!=null&&!isNaN(+v)){state.ugoals[nom]=+v;save();}}
-function closeClub(){Object.values(AC).forEach(function(c){try{c.destroy();}catch(e){}});AC={};$i('detail').style.display='none';$i('t-equipes').style.display='block';}
-function swInner(id,btn){document.querySelectorAll('.itab').forEach(function(t){t.classList.remove('on');});document.querySelectorAll('.ipanel').forEach(function(c){c.classList.remove('on');});if(btn)btn.classList.add('on');$i('ip-'+id).classList.add('on');}
-
-/* ── PARIS ── */
-function pari(isS){
-  var n,b,c,m,target,type,l=1,sport='',comp='',heure='',date='';
-  var now=new Date();
-  var t=now.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit'})+' '+now.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
-  if(isS){
-    var u=state.u.find(function(x){return x.n===$i('c-unit').value;});if(!u)return alert('Aucune équipe !');
-    n=u.n;target=$i('c-target').value||'-';type=getMmLabel()||'-';
-    sport=$i('c-sport').value||'';comp=$i('c-comp').value||'';
-    heure=$i('c-heure').value||'';date=$i('c-date').value||'';
-    b=$i('c-book').value;c=getMmCote();
-    m=parseFloat($i('c-mise').value)||0;l=u.l;
-  }else{
-    n='SIMPLE';sport=$i('p-sport').value;heure=$i('n-heure').value||'';date=$i('n-date').value||'';
-    comp=$i('n-comp').value;target=$i('n-analysis').value||comp||'Pari simple';
-    type=$i('n-type').value||'-';b=$i('n-book').value;
-    c=parseFloat($i('n-cote').value.replace(',','.'))||0;m=parseFloat($i('n-mise').value)||0;
-  }
-  if(m>0&&(parseFloat(state.b[b])||0)>=m){
-    state.b[b]=(parseFloat(state.b[b])-m).toFixed(2);
-    state.h.unshift({id:Date.now().toString(),n:n,target:target,b:b,l:l,m:m,cote:c,isS:isS,t:t,sport:sport,type:type,comp:comp,heure:heure,date:date});
-    save();
-    if(isS){$i('c-target').value='';$i('c-comp').value='';}
-    else{$i('n-comp').value='';$i('n-type').value='';$i('n-analysis').value='';}
-  }else alert('Solde insuffisant sur '+bki(b).n+' !');
-}
-function result(id,win){
-  var idx=state.h.findIndex(function(x){return x.id===id;});if(idx===-1)return;
-  var bet=state.h[idx];
-  var debrief=prompt('Débrief ('+(win?'WIN ✅':'LOSS ❌')+') :','')||'';
-  if(win){state.b[bet.b]=(parseFloat(state.b[bet.b])+(bet.m*bet.cote)).toFixed(2);if(bet.isS){var u=state.u.find(function(x){return x.n===bet.n;});if(u)u.l=1;}}
-  else if(bet.isS){var u2=state.u.find(function(x){return x.n===bet.n;});if(u2&&u2.l<8)u2.l++;}
-  var archived=Object.assign({},bet,{win:win,debrief:debrief});
-  state.a.unshift(archived);state.h.splice(idx,1);save();updMise();
-}
-function deleteArchived(id){
-  if(!confirm('Supprimer ce pari de l\'archive ?\nCela recalculera le b\u00e9n\u00e9fice.'))return;
-  var idx=state.a.findIndex(function(x){return x.id===id;});if(idx===-1)return;
-  var bet=state.a[idx];
-  /* Inverse la transaction sur le bookmaker */
-  if(bet.win){
-    /* Il avait gagné → on retire le gain du bk */
-    state.b[bet.b]=(parseFloat(state.b[bet.b]||0)-(bet.m*bet.cote)).toFixed(2);
-  } else {
-    /* Il avait perdu → on remet la mise */
-    state.b[bet.b]=(parseFloat(state.b[bet.b]||0)+parseFloat(bet.m)).toFixed(2);
-  }
-  /* Si cockpit, remet le palier */
-  if(bet.isS&&bet.l){
-    var u=state.u.find(function(x){return x.n===bet.n;});
-    if(u)u.l=parseInt(bet.l)||Math.max(1,u.l-1);
-  }
-  state.a.splice(idx,1);
-  save();
-}
-function cancelBet(id){
-  if(!confirm('Annuler ce pari et rembourser la mise ?'))return;
-  var idx=state.h.findIndex(function(x){return x.id===id;});if(idx===-1)return;
-  var bet=state.h[idx];
-  /* Rembourse + restore palier */
-  state.b[bet.b]=(parseFloat(state.b[bet.b]||0)+parseFloat(bet.m)).toFixed(2);
-  if(bet.isS&&bet.l){var u=state.u.find(function(x){return x.n===bet.n;});if(u)u.l=parseInt(bet.l)||1;}
-  state.h.splice(idx,1);save();
-}
-function updMise(){
-  var u=state.u.find(function(x){return x.n===$i('c-unit').value;});
-  if(u&&$i('c-mise'))$i('c-mise').value=STRATS[u.s][u.l-1]||0;
-}
-
-/* ── BANK ── */
-function fund(add){
-  var b=$i('mv-book').value;var amt=parseFloat($i('mv-amt').value);
-  if(!b||isNaN(amt))return;
-  state.b[b]=(parseFloat(state.b[b]||0)+(add?amt:-amt)).toFixed(2);
-  if(add)state.start_bk+=amt;save();
-}
-function addBook(){
-  var inp=$i('new-bk');var name=inp.value.trim().toLowerCase();if(!name)return;
-  if(state.b[name]!==undefined)return alert('Existe déjà !');
-  var init=parseFloat(prompt('Solde de départ pour '+bki(name).n+' ?','0'))||0;
-  state.b[name]=init.toFixed(2);state.start_bk+=init;inp.value='';save();
-}
-function delBook(k){if(confirm('Supprimer '+bki(k).n+' ?')){delete state.b[k];save();}}
-function editBook(k){
-  var v=prompt('Nouveau solde pour '+bki(k).n+' ?',parseFloat(state.b[k]));
-  if(v!=null){var nv=parseFloat(v);if(!isNaN(nv)){state.start_bk+=(nv-parseFloat(state.b[k]));state.b[k]=nv;save();}}
-}
-function addUnit(){
-  var name=($i('u-name')&&$i('u-name').value||'').trim();if(!name)return;
-  var color=$i('u-color').value||selColor||PCOLS[0];
-  var pending=window._pendingLogo&&window._pendingLogo.name===name?window._pendingLogo:null;
-  var abbr=pending?pending.abbr:name.substring(0,3).toUpperCase();
-  var logoUrl=pending?pending.url:(LOGOS[name]||null);
-  var sport=($i('u-sport')&&$i('u-sport').value)||'⚽';
-  if(pending&&pending.color)color=pending.color;
-  if(pending&&pending.sport)sport=pending.sport;
-  if(state.u.find(function(u){return u.n===name;}))return alert('Existe déjà !');
-  state.u.push({n:name,abbr:abbr,color:color,s:$i('u-stars').value,l:1,sport:sport,logoUrl:logoUrl||''});
-  if(logoUrl)LOGOS[name]=logoUrl;
-  $i('u-name').value='';
-  $i('search-results').innerHTML='';
-  window._pendingLogo=null;
-  save();
-}
-function editUnit(i){
-  var u=state.u[parseInt(i)];if(!u)return;
-  var newName=prompt('Nom :',u.n);if(newName&&newName.trim())u.n=newName.trim().toUpperCase();
-  var newStars=prompt('Étoiles (1-5) :',u.s);if(newStars&&!isNaN(+newStars)&&+newStars>=1&&+newStars<=5)u.s=String(+newStars);
-  var newColor=prompt('Couleur hex (#rrggbb) :',u.color);if(newColor&&/^#[0-9a-fA-F]{6}$/.test(newColor))u.color=newColor;
-  save();
-}
-function rmUnit(i){var u=state.u[parseInt(i)];if(u&&confirm('Supprimer '+u.n+' ?')){state.u.splice(parseInt(i),1);save();}}
-
-/* ── NAV ── */
-function showTab(id,btn){
-  document.querySelectorAll('.tab').forEach(function(t){if(t)t.style.display='none';});
-  var det=$i('detail');if(det)det.style.display='none';
-  var t=$i(id);if(t)t.style.display='block';
-  document.querySelectorAll('.ni').forEach(function(b){b.classList.remove('on');});
-  if(btn)btn.classList.add('on');
-  render();
-  if(id==='t-equipes')setTimeout(function(){showGTab('g-global',document.querySelector('.gtab'));},50);
-}
-function swBet(mode){
-  var isS=mode==='strat';
-  var ss=$i('sub-strat');if(ss)ss.style.display=isS?'block':'none';
-  var sp=$i('sub-simple');if(sp)sp.style.display=isS?'none':'block';
-  var bc=$i('btn-cpit');if(bc)bc.classList.toggle('on',isS);
-  var bs=$i('btn-simp');if(bs)bs.classList.toggle('on',!isS);
-}
-function exportData(){var d='data:text/json;charset=utf-8,'+encodeURIComponent(JSON.stringify(state));var a=document.createElement('a');a.href=d;a.download='gones45_backup.json';a.click();}
-function importData(){var i=document.createElement('input');i.type='file';i.onchange=function(e){var r=new FileReader();r.onload=function(ev){state=JSON.parse(ev.target.result);save();location.reload();};r.readAsText(e.target.files[0]);};i.click();}
-
-
-/* ── GLOBAL TAB ── */
-var GC2={};
-function showGTab(id, btn){
-  document.querySelectorAll('.gtab').forEach(function(b){b.classList.remove('on');});
-  document.querySelectorAll('.gpanel').forEach(function(p){p.classList.remove('on');});
-  if(btn)btn.classList.add('on');
-  var p=$i(id);if(p)p.classList.add('on');
-  if(id==='g-global')renderGlobalCharts();
-  if(id==='g-equipes')renderEquipes();
-}
-
-function renderGlobalCharts(){
-  renderGlobalChart();
-  setTimeout(function(){
-    renderBooksChart();
-    renderPaliersChart();
-    renderRadarChart();
-  },80);
-}
-
-function renderBooksChart(){
-  var ctx=$i('chart-books');if(!ctx)return;
-  if(GC2.books){try{GC2.books.destroy();}catch(e){}}
-  var total=Object.values(state.b).reduce(function(a,v){return a+parseFloat(v||0);},0);
-  if(total<=0){ctx.parentElement.innerHTML='<div class="empty">Aucun solde</div>';return;}
-  var labels=[],data=[],colors=[];
-  Object.entries(state.b).forEach(function(e){
-    var v=parseFloat(e[1]||0);
-    if(v>0){labels.push(bki(e[0]).n);data.push(v);colors.push(bki(e[0]).c);}
-  });
-  if(!data.length){ctx.parentElement.innerHTML='<div class="empty">Aucun solde positif</div>';return;}
-  GC2.books=new Chart(ctx.getContext('2d'),{
-    type:'doughnut',
-    data:{labels:labels,datasets:[{data:data,backgroundColor:colors.map(function(c){return c+'aa';}),borderColor:colors,borderWidth:1,hoverOffset:4}]},
-    options:{
-      responsive:true,maintainAspectRatio:false,cutout:'65%',
-      plugins:{
-        legend:{display:true,position:'right',labels:{color:'#8b97c4',font:{size:10},boxWidth:10,padding:8}},
-        tooltip:{backgroundColor:'rgba(8,11,18,.96)',callbacks:{label:function(i){return i.label+': '+i.raw.toFixed(2)+'€ ('+((i.raw/total)*100).toFixed(1)+'%)';}}}
-      }
-    }
-  });
+  /* mini charts removed */
+  ctx.parentElement.innerHTML=html||'<div class="empty">Aucun solde</div>';
 }
 
 function renderPaliersChart(){
   var ctx=$i('chart-paliers');if(!ctx)return;
-  if(GC2.paliers){try{GC2.paliers.destroy();}catch(e){}}
   if(!state.u.length){ctx.parentElement.innerHTML='<div class="empty">Aucune équipe</div>';return;}
-  var labels=state.u.map(function(u){return u.n.substring(0,8);});
-  var data=state.u.map(function(u){return u.l;});
-  var colors=state.u.map(function(u){
-    var l=u.l;
-    return l>=6?'rgba(255,69,69,.8)':l>=4?'rgba(240,176,32,.8)':l>=2?'rgba(77,132,255,.7)':'rgba(30,215,96,.7)';
+  var html='';
+  state.u.forEach(function(u){
+    var pct=(u.l/8*100).toFixed(0);
+    var c=u.l>=6?'var(--r)':u.l>=4?'var(--gold)':u.l>=2?'var(--a)':'var(--g)';
+    html+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">'
+      +'<div style="font-size:11px;font-weight:600;width:80px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+u.n+'</div>'
+      +'<div style="flex:1;height:8px;background:var(--bg3);border-radius:4px;overflow:hidden">'
+      +'<div style="height:100%;width:'+pct+'%;background:'+c+';border-radius:4px"></div></div>'
+      +'<div style="font-size:11px;font-weight:800;color:'+c+';width:30px;text-align:right">P'+u.l+'</div>'
+      +'</div>';
   });
-  GC2.paliers=new Chart(ctx.getContext('2d'),{
-    type:'bar',
-    data:{labels:labels,datasets:[{label:'Palier actuel',data:data,backgroundColor:colors,borderColor:colors.map(function(c){return c.replace('.7','.9').replace('.8','1');}),borderWidth:1,borderRadius:4}]},
-    options:{
-      responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{display:false},tooltip:{callbacks:{label:function(i){return 'Palier '+i.raw+' ('+state.u[i.dataIndex].n+')';}}}},
-      scales:{
-        x:{ticks:{color:'#4f5d88',font:{size:9}},grid:{display:false}},
-        y:{min:0,max:8,ticks:{color:'#4f5d88',font:{size:9},stepSize:1},grid:{color:'rgba(255,255,255,.03)'}}
-      }
-    }
-  });
+  ctx.parentElement.innerHTML=html;
 }
 
 function renderRadarChart(){
   var ctx=$i('chart-radar');if(!ctx)return;
-  if(GC2.radar){try{GC2.radar.destroy();}catch(e){}}
   if(!state.a.length){ctx.parentElement.innerHTML='<div class="empty">Aucun historique</div>';return;}
   var typeMap={};
   state.a.forEach(function(h){
     var t=(h.type||'Autre').trim()||'Autre';
-    if(!typeMap[t])typeMap[t]={n:0,wins:0,profit:0,mise:0};
-    typeMap[t].n++;
-    if(h.win)typeMap[t].wins++;
+    if(!typeMap[t])typeMap[t]={n:0,wins:0,profit:0};
+    typeMap[t].n++;if(h.win)typeMap[t].wins++;
     typeMap[t].profit+=(h.win?(h.m*h.cote)-h.m:-h.m);
-    typeMap[t].mise+=parseFloat(h.m||0);
   });
   var entries=Object.entries(typeMap).sort(function(a,b){return b[1].n-a[1].n;}).slice(0,8);
-  var labels=entries.map(function(e){return e[0];});
-  var wrData=entries.map(function(e){return parseFloat((e[1].wins/e[1].n*100).toFixed(1));});
-  var roiData=entries.map(function(e){return e[1].mise>0?parseFloat((e[1].profit/e[1].mise*100).toFixed(1)):0;});
-  GC2.radar=new Chart(ctx.getContext('2d'),{
-    type:'radar',
-    data:{
-      labels:labels,
-      datasets:[
-        {label:'Réussite %',data:wrData,borderColor:'rgba(30,215,96,.9)',backgroundColor:'rgba(30,215,96,.08)',borderWidth:2,pointBackgroundColor:'#1ed760',pointRadius:3},
-        {label:'ROI %',data:roiData,borderColor:'rgba(77,132,255,.9)',backgroundColor:'rgba(77,132,255,.06)',borderWidth:2,pointBackgroundColor:'#4d84ff',pointRadius:3}
-      ]
-    },
-    options:{
-      responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{display:true,labels:{color:'#8b97c4',font:{size:10},boxWidth:10}}},
-      scales:{r:{ticks:{color:'#4f5d88',font:{size:9},backdropColor:'transparent'},grid:{color:'rgba(255,255,255,.07)'},pointLabels:{color:'#8b97c4',font:{size:9}}}}
-    }
+  var html='';
+  entries.forEach(function(e){
+    var wr=(e[1].wins/e[1].n*100).toFixed(0);
+    var pc=e[1].profit>=0?'var(--g)':'var(--r)';
+    html+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:7px">'
+      +'<div style="font-size:11px;width:90px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+e[0]+'</div>'
+      +'<div style="flex:1;height:6px;background:var(--bg3);border-radius:3px;overflow:hidden">'
+      +'<div style="height:100%;width:'+wr+'%;background:var(--a);border-radius:3px"></div></div>'
+      +'<div style="font-size:10px;font-weight:700;width:32px;text-align:center">'+wr+'%</div>'
+      +'<div style="font-size:10px;font-weight:700;color:'+pc+';width:50px;text-align:right">'+fmt(e[1].profit)+'</div>'
+      +'</div>';
   });
+  ctx.parentElement.innerHTML=html||'<div class="empty">Aucun type</div>';
 }
 
 /* ── MYMATCH ── */
